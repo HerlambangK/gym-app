@@ -22,11 +22,11 @@ export default function Home() {
       <section className="hero-media min-h-[720px]">
         <div className="section-wrap flex min-h-[656px] items-center">
           <div className="max-w-3xl py-24">
-            <Badge variant="warning">Premium Dark MVP</Badge>
-            <h1 className="mt-6 max-w-3xl text-5xl font-semibold leading-tight text-white sm:text-6xl">
+            <Badge variant="warning">Light First Theme</Badge>
+            <h1 className="mt-6 max-w-3xl text-5xl font-semibold leading-tight text-foreground sm:text-6xl">
               {brand.name}
             </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-200">
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
               {brand.tagline} Member daftar, bayar, aktif otomatis, lalu check-in berbasis lokasi. Owner melihat revenue, expense, profit, attendance, dan performa paket.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -40,9 +40,9 @@ export default function Home() {
                 ["12", "Trainer"],
                 ["186", "Check-in hari ini"],
               ].map(([value, label]) => (
-                <div key={label} className="rounded-lg border border-white/15 bg-white/5 p-4 backdrop-blur">
-                  <p className="text-2xl font-semibold text-white">{value}</p>
-                  <p className="text-sm text-zinc-300">{label}</p>
+                <div key={label} className="rounded-lg border border-border bg-card/80 p-4 shadow-sm backdrop-blur">
+                  <p className="text-2xl font-semibold text-foreground">{value}</p>
+                  <p className="text-sm text-muted-foreground">{label}</p>
                 </div>
               ))}
             </div>

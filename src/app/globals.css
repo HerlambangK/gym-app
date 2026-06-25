@@ -1,26 +1,39 @@
 @import "tailwindcss";
 
 :root {
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  --primary: 24 95% 53%;
+  --primary-foreground: 0 0% 98%;
+  --secondary: 188 84% 45%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 240 5% 96%;
+  --muted-foreground: 240 4% 46%;
+  --accent: 142 71% 45%;
+  --accent-foreground: 144 61% 10%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+  --ring: 24 95% 53%;
+  --radius: 0.75rem;
+}
+
+.dark {
   --background: 240 10% 3.9%;
   --foreground: 0 0% 98%;
   --card: 240 10% 7%;
   --card-foreground: 0 0% 98%;
   --popover: 240 10% 7%;
   --popover-foreground: 0 0% 98%;
-  --primary: 24 95% 53%;
-  --primary-foreground: 0 0% 98%;
-  --secondary: 188 84% 45%;
-  --secondary-foreground: 222 47% 11%;
   --muted: 240 4% 16%;
   --muted-foreground: 240 5% 70%;
-  --accent: 142 71% 45%;
-  --accent-foreground: 144 61% 10%;
-  --destructive: 0 72% 51%;
-  --destructive-foreground: 0 0% 98%;
   --border: 240 4% 18%;
   --input: 240 4% 18%;
-  --ring: 24 95% 53%;
-  --radius: 0.75rem;
 }
 
 @theme inline {
@@ -63,10 +76,16 @@ html {
 
 .hero-media {
   background-image:
-    linear-gradient(90deg, rgba(9, 9, 11, 0.96), rgba(9, 9, 11, 0.58), rgba(9, 9, 11, 0.18)),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.36)),
     url("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=2200&q=80");
   background-position: center;
   background-size: cover;
+}
+
+.dark .hero-media {
+  background-image:
+    linear-gradient(90deg, rgba(9, 9, 11, 0.96), rgba(9, 9, 11, 0.58), rgba(9, 9, 11, 0.18)),
+    url("https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=2200&q=80");
 }
 
 .section-wrap {
