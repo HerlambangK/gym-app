@@ -15,7 +15,7 @@ export type SummaryItem = {
 export function OwnerOverview({ summary }: { summary: SummaryItem[] }) {
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {summary.map((item) => (
           <MetricCard key={item.label} {...item} />
         ))}

@@ -4,6 +4,7 @@ import { getAllInvoices } from "@/lib/db/invoices"
 import { getMembers } from "@/lib/db/members"
 import { InvoiceTable, MemberTable } from "@/components/dashboard/data-table"
 import { MetricCard } from "@/components/dashboard/metric-card"
+import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { AttendanceChart } from "@/components/charts/revenue-chart"
 import { redirect } from "next/navigation"
 import { getTodayCheckInCount } from "@/lib/db/attendances"
@@ -42,10 +43,16 @@ export default async function Page() {
 
   return (
     <div className="space-y-6">
+      <DashboardPageHeader
+        eyebrow="Admin"
+        title="Operasional Front Desk"
+        description="Kelola member, pembayaran, invoice, dan check-in harian dengan tampilan yang mudah dipindai."
+        status="Live operasional"
+      />
       <div className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Check-ins Today" value={todayCheckIns} helper="Real-time from attendance" />
-        <MetricCard label="Active Members" value={activeMembers} helper="Active subscriptions" />
-        <MetricCard label="Pending Invoices" value={0} helper="Unpaid" />
+        <MetricCard label="Check-in hari ini" value={todayCheckIns} helper="Real-time dari attendance" />
+        <MetricCard label="Member aktif" value={activeMembers} helper="Subscription aktif" />
+        <MetricCard label="Invoice pending" value={0} helper="Belum dibayar" />
       </div>
       <AttendanceChart />
       <div className="grid gap-6 xl:grid-cols-2">

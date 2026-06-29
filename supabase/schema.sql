@@ -251,6 +251,7 @@ create table if not exists public.nutrition_logs (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null references public.members(id),
   log_date date not null,
+  food_name text,
   weight_kg numeric(6, 2),
   calories integer,
   protein_gram integer,
@@ -261,6 +262,54 @@ create table if not exists public.nutrition_logs (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (member_id, log_date)
+);
+
+alter table public.nutrition_logs
+  add column if not exists food_name text;
+
+create table if not exists public.nutrition_targets (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references public.members(id) on delete cascade,
+  target_bmi numeric(5, 2),
+  target_calories integer,
+  target_weight_kg numeric(6, 2),
+  target_protein_gram integer,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (member_id)
+);
+
+create table if not exists public.workout_programs (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references public.members(id) on delete cascade,
+  title text not null,
+  goal text,
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.workout_sessions (
+  id uuid primary key default gen_random_uuid(),
+  program_id uuid not null references public.workout_programs(id) on delete cascade,
+  day_name text not null,
+  session_order integer not null default 1,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.workout_exercises (
+  id uuid primary key default gen_random_uuid(),
+  session_id uuid not null references public.workout_sessions(id) on delete cascade,
+  exercise_name text not null,
+  exercise_type text not null,
+  sets integer not null default 3,
+  reps text,
+  load_note text,
+  exercise_order integer not null default 1,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
 );
 
 create table if not exists public.audit_logs (
@@ -283,6 +332,10 @@ alter table public.subscriptions enable row level security;
 alter table public.payments enable row level security;
 alter table public.attendances enable row level security;
 alter table public.nutrition_logs enable row level security;
+alter table public.nutrition_targets enable row level security;
+alter table public.workout_programs enable row level security;
+alter table public.workout_sessions enable row level security;
+alter table public.workout_exercises enable row level security;
 
 insert into public.roles (name, code, description) values
   ('Super Admin', 'SUPER_ADMIN', 'Platform operator'),
@@ -344,4 +397,3 @@ insert into public.features (code, name, category, is_premium) values
   ('priority_support', 'Priority Support', 'Support', true),
   ('multi_branch_access', 'Multi Branch Access', 'Branch', true)
 on conflict (code) do nothing;
-

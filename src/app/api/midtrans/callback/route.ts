@@ -33,6 +33,10 @@ export async function POST(request: Request) {
   const isSuccess =
     transactionStatus === "settlement" ||
     (transactionStatus === "capture" && fraudStatus === "accept")
+  const isFailure =
+    transactionStatus === "deny" ||
+    transactionStatus === "cancel" ||
+    transactionStatus === "expire"
 
   if (isSuccess && payment) {
     await updatePaymentStatus(payment.id, "PAID", payload.transaction_id, payload)
@@ -48,11 +52,7 @@ export async function POST(request: Request) {
     if (sub) {
       await activateSubscription(sub.id)
     }
-  } else if (
-    transactionStatus === "deny" ||
-    transactionStatus === "cancel" ||
-    transactionStatus === "expire"
-  ) {
+  } else if (isFailure) {
     if (payment) await updatePaymentStatus(payment.id, "FAILED")
     await updateInvoiceStatus(invoice.id, "FAILED")
   }
@@ -61,6 +61,6 @@ export async function POST(request: Request) {
     received: true,
     orderId,
     transactionStatus,
-    invoiceStatus: isSuccess ? "PAID" : "FAILED",
+    invoiceStatus: isSuccess ? "PAID" : isFailure ? "FAILED" : invoice.status,
   })
 }

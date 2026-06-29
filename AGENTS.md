@@ -172,3 +172,75 @@ Prefer these skills when the task matches them:
   - ESLint passed on changed auth/register/seed files.
   - `npm run build` passed with Node 20 after sandbox escalation for Turbopack.
   - Supabase password login was verified for the demo OWNER, ADMIN, and MEMBER accounts without printing tokens.
+
+### 2026-06-29 - Landing/Auth/Dashboard UI/UX Optimization
+
+- Agents/skills used: `explorer` for read-only repo audit, plus the `modern-design-agent`, `ui-ux-agent`, and `frontend-agent` operating model from this file.
+- Docs checked before code changes: Next.js local docs for App Router layouts/pages, Server and Client Components, and CSS in `node_modules/next/dist/docs/01-app/01-getting-started`.
+- Problem addressed: improve landing/auth/mobile/dashboard usability across owner, admin, and member flows after the RBAC/login repair.
+- Changes made:
+  - Added reusable `DashboardPageHeader` for clearer role-specific page hierarchy.
+  - Added a working public mobile navigation sheet so the landing page mobile menu is no longer a dead button.
+  - Improved login/register modal mobile behavior with bounded height, scroll, labels, ARIA affordances, and preserved demo account shortcuts.
+  - Refined dashboard shell spacing, sticky header treatment, responsive content padding, and role status chip behavior.
+  - Improved dashboard metric cards, data tables, and chart formatting for Indonesian copy, currency readability, responsive overflow, and cleaner visual hierarchy.
+  - Improved owner/admin/member dashboard copy and layout, including member check-in recovery with GPS retry and clearer disabled states.
+  - Hid the sidebar user footer on small dashboard layouts to avoid mobile overlap from the sidebar system.
+- Verification:
+  - Playwright screenshots checked for landing mobile, login mobile, owner dashboard desktop, member dashboard mobile, and role dashboard surfaces.
+  - Verified `/?action=login` opens the login modal on mobile.
+  - `npx tsc --noEmit` passed.
+  - ESLint passed on all files changed by this UI/UX pass.
+  - `npm test -- --runTestsByPath src/__tests__/scenarios/login.scenario.test.ts src/__tests__/scenarios/register.scenario.test.ts --maxWorkers=1` passed.
+  - `npm run build` passed with Node 20 after sandbox escalation for Turbopack.
+
+### 2026-06-29 - Functional Feature Buildout Phase 1
+
+- Agents/skills used: `explorer` subagent for read-only feature mapping, plus `backend-agent`, `database-agent`, `frontend-agent`, `ui-ux-agent`, and `security-agent` operating model from this file.
+- Docs checked before code changes: Next.js local docs for App Router layouts/pages, Server and Client Components, Forms/Server Actions, and Route Handlers in `node_modules/next/dist/docs/01-app`.
+- Problem addressed: start making core premium gym features functional instead of placeholder-only: branch location, nutrition, workout program, premium feature management, profile settings, and subscription payment UX.
+- Changes made:
+  - Added Leaflet for owner/admin branch map input and member gym map display.
+  - Added secure server actions for branch location, premium feature toggles, nutrition logging/targets, workout program saving, and member profile updates.
+  - Added owner/admin branch settings UI with latitude, longitude, radius, contact fields, click-to-set map, and DB-backed branch persistence.
+  - Updated member check-in/dashboard/manual check-in surfaces to use DB branch location instead of hardcoded coordinates and to show the gym map to members.
+  - Added DB-backed nutrition target/log UI for food name, calories, macros, weight, target BMI, target calories, and recent history.
+  - Added DB-backed workout program tree UI for program, day, exercise, type, sets, reps, and load notes.
+  - Replaced premium feature mock cards with DB-backed owner/admin feature toggles and added admin route/sidebar access.
+  - Rebuilt member profile settings with editable name/phone and member account summary.
+  - Improved member billing so plans can be purchased from the portal through the existing Midtrans transaction API.
+  - Updated `supabase/schema.sql` and added `supabase/feature-upgrade-2026-06-29.sql` for existing databases.
+- Verification:
+  - `npx tsc --noEmit` passed.
+  - ESLint passed on all files changed by this feature phase.
+  - `npm test -- --runTestsByPath src/__tests__/scenarios/login.scenario.test.ts src/__tests__/scenarios/register.scenario.test.ts --maxWorkers=1` passed.
+  - `npm run build` passed with Node 20 after sandbox escalation for Turbopack.
+- Operational note:
+  - Existing Supabase projects must apply `supabase/feature-upgrade-2026-06-29.sql` before the new nutrition target and workout persistence pages can write to the new tables.
+
+### 2026-06-29 - Branch Location Map Search Fix
+
+- Problem addressed: Leaflet import caused a build/runtime error and the branch location map needed searchable location input with the saved pin using the selected coordinates.
+- Changes made:
+  - Changed Leaflet usage in branch map components to dynamic browser-only imports so server/build paths do not import `leaflet` directly.
+  - Added OpenStreetMap/Nominatim search UI to the branch location form.
+  - Selecting a search result now updates the map pin, latitude, longitude, and address field before saving.
+  - Kept manual latitude/longitude editing and map click-to-pin behavior for precision adjustments.
+- Verification:
+  - `npx tsc --noEmit` passed.
+  - ESLint passed on the branch location files and related actions/pages.
+  - `npm run build` passed with Node 20 after sandbox escalation for Turbopack.
+
+### 2026-06-29 - Branch Location Map Reliability and Precise Search
+
+- Problem addressed: branch location map rendering looked broken, location search was too coarse, and save failures did not expose useful errors.
+- Changes made:
+  - Replaced static Leaflet element ids with DOM refs and added `invalidateSize` plus `ResizeObserver` so tiles render correctly inside responsive cards.
+  - Normalized dynamic Leaflet imports to support runtime default exports.
+  - Added `/api/geo/search` as a server-side Nominatim proxy with Indonesian language, namedetails, extratags, fallback query, and result dedupe.
+  - Updated branch location search to use the internal API so place/building names are more likely to resolve than browser-side direct search.
+  - Added server-action error handling and visible field validation details for failed location saves.
+- Verification:
+  - `npx tsc --noEmit` passed.
+  - ESLint passed on branch location/API files.
+  - `npm run build` passed with Node 20 after sandbox escalation for Turbopack.

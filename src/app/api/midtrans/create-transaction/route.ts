@@ -52,7 +52,7 @@ export async function POST(request: Request) {
 
   const orderId = invoice.invoice_number
 
-  const payment = await createPayment({
+  await createPayment({
     invoiceId: invoice.id,
     provider: "midtrans",
     providerOrderId: orderId,

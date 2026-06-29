@@ -1,25 +1,36 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { redirect } from "next/navigation"
+import { DashboardPageHeader } from "@/components/dashboard/page-header"
+import { ProfileForm } from "@/components/member/profile-form"
+import { getMemberByUserId } from "@/lib/db/members"
+import { getUserById } from "@/lib/db/users"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
 
 export default async function Page() {
   const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
+  const [profile, member] = await Promise.all([
+    getUserById(user.id).catch(() => null),
+    getMemberByUserId(user.id),
+  ])
+
   return (
-    <Card>
-      <CardHeader><CardTitle>Member Profile</CardTitle></CardHeader>
-      <CardContent className="grid gap-3 md:grid-cols-2">
-        {[
-          `Name: ${user.user_metadata?.name || user.email}`,
-          `Email: ${user.email}`,
-          `Role: MEMBER`,
-          `Status: ${user.email_confirmed_at ? "VERIFIED" : "UNVERIFIED"}`,
-        ].map((item) => (
-          <div key={item} className="rounded-md border border-border p-3">{item}</div>
-        ))}
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <DashboardPageHeader
+        eyebrow="Profile"
+        status={user.email_confirmed_at ? "Verified" : "Unverified"}
+        title="Setting Profile"
+        description="Kelola identitas member, kontak, status akun, dan informasi membership."
+      />
+      <ProfileForm
+        profile={profile}
+        member={member}
+        email={user.email || ""}
+        verified={Boolean(user.email_confirmed_at)}
+      />
+    </div>
   )
 }

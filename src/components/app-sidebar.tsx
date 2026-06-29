@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
-import { Dumbbell, LayoutDashboard, Users, CreditCard, Activity, Settings, ShieldCheck, LogOut } from "lucide-react"
+import { Dumbbell, LayoutDashboard, Users, CreditCard, Activity, Settings, ShieldCheck } from "lucide-react"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
@@ -47,6 +47,8 @@ const navByRole: Record<RoleCode, SidebarNavItem[]> = {
     { title: "Invoices", url: "/admin/invoices", icon: <CreditCard /> },
     { title: "Attendances", url: "/admin/attendances", icon: <Activity /> },
     { title: "Manual Check-in", url: "/admin/check-in-manual", icon: <Activity /> },
+    { title: "Premium Features", url: "/admin/premium-features", icon: <ShieldCheck /> },
+    { title: "Settings", url: "/admin/settings", icon: <Settings /> },
   ],
   MARKETING: [],
   TRAINER: [],
@@ -91,7 +93,7 @@ export function AppSidebar({
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="hidden md:flex">
         <NavUser user={data.user} />
       </SidebarFooter>
       <SidebarRail />
