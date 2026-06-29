@@ -166,6 +166,7 @@ export default function Home() {
                 </Link>
                 <button
                   type="button"
+                  aria-label="Keluar dari akun"
                   onClick={async () => {
                     const supabase = createBrowserSupabaseClient()
                     await supabase.auth.signOut()
@@ -183,7 +184,7 @@ export default function Home() {
                 <Button size="sm" onClick={() => setRegisterOpen(true)} className="shadow-lg shadow-foreground/10">Daftar</Button>
 
                 <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-                  <DialogContent className="sm:max-w-[380px]">
+                  <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[440px]">
                     <DialogHeader>
                       <DialogTitle className="text-xl">Masuk</DialogTitle>
                       <DialogDescription>Masuk ke akun {brand.name} Anda.</DialogDescription>
@@ -226,8 +227,9 @@ export default function Home() {
                         </div>
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Email</label>
+                        <label htmlFor="login-email" className="text-sm font-medium">Email</label>
                         <Input
+                          id="login-email"
                           name="email"
                           type="email"
                           placeholder="nama@email.com"
@@ -238,9 +240,10 @@ export default function Home() {
                         />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Password</label>
+                        <label htmlFor="login-password" className="text-sm font-medium">Password</label>
                         <div className="relative">
                           <Input
+                            id="login-password"
                             name="password"
                             type={showLoginPassword ? "text" : "password"}
                             placeholder="Minimal 6 karakter"
@@ -250,7 +253,12 @@ export default function Home() {
                             value={loginPassword}
                             onChange={(event) => setLoginPassword(event.target.value)}
                           />
-                          <button type="button" onClick={() => setShowLoginPassword(!showLoginPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          <button
+                            type="button"
+                            aria-label={showLoginPassword ? "Sembunyikan password" : "Tampilkan password"}
+                            onClick={() => setShowLoginPassword(!showLoginPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
                             {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         </div>
@@ -267,29 +275,34 @@ export default function Home() {
                 </Dialog>
 
                 <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-                  <DialogContent className="sm:max-w-[380px]">
+                  <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[440px]">
                     <DialogHeader>
                       <DialogTitle className="text-xl">Daftar Akun</DialogTitle>
                       <DialogDescription>Buat akun baru {brand.name}.</DialogDescription>
                     </DialogHeader>
                     <form action={regFormAction} className="mt-2 grid gap-4">
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Nama Lengkap</label>
-                        <Input name="name" placeholder="Nama lengkap" required className="h-10" />
+                        <label htmlFor="register-name" className="text-sm font-medium">Nama Lengkap</label>
+                        <Input id="register-name" name="name" placeholder="Nama lengkap" required className="h-10" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Email</label>
-                        <Input name="email" type="email" placeholder="nama@email.com" required className="h-10" />
+                        <label htmlFor="register-email" className="text-sm font-medium">Email</label>
+                        <Input id="register-email" name="email" type="email" placeholder="nama@email.com" required className="h-10" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Nomor WhatsApp</label>
-                        <Input name="phone" placeholder="+62 812-xxxx-xxxx" className="h-10" />
+                        <label htmlFor="register-phone" className="text-sm font-medium">Nomor WhatsApp</label>
+                        <Input id="register-phone" name="phone" placeholder="+62 812-xxxx-xxxx" className="h-10" />
                       </div>
                       <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Password</label>
+                        <label htmlFor="register-password" className="text-sm font-medium">Password</label>
                         <div className="relative">
-                          <Input name="password" type={showRegPassword ? "text" : "password"} placeholder="Minimal 6 karakter" required minLength={6} className="h-10 pr-10" />
-                          <button type="button" onClick={() => setShowRegPassword(!showRegPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          <Input id="register-password" name="password" type={showRegPassword ? "text" : "password"} placeholder="Minimal 6 karakter" required minLength={6} className="h-10 pr-10" />
+                          <button
+                            type="button"
+                            aria-label={showRegPassword ? "Sembunyikan password" : "Tampilkan password"}
+                            onClick={() => setShowRegPassword(!showRegPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          >
                             {showRegPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                           </button>
                         </div>
@@ -315,19 +328,30 @@ export default function Home() {
                 </Dialog>
               </>
             )}
-            <button className="md:hidden text-muted-foreground" onClick={() => setMenuOpen(!menuOpen)}>
+            <button
+              className="md:hidden text-muted-foreground"
+              type="button"
+              aria-label={menuOpen ? "Tutup menu navigasi" : "Buka menu navigasi"}
+              aria-expanded={menuOpen}
+              aria-controls="landing-mobile-nav"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
               {menuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
         {menuOpen && (
-          <div className="border-t border-border/50 bg-background px-5 py-4 md:hidden">
+          <div id="landing-mobile-nav" className="border-t border-border/50 bg-background px-5 py-4 md:hidden">
             <nav className="flex flex-col gap-3">
               {navItems.map((item) => (
                 <Link key={item.href} href={item.href} className="text-sm font-medium text-muted-foreground hover:text-foreground" onClick={() => setMenuOpen(false)}>
                   {item.label}
                 </Link>
               ))}
+              <div className="grid grid-cols-2 gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => { setLoginOpen(true); setMenuOpen(false) }}>Masuk</Button>
+                <Button size="sm" onClick={() => { setRegisterOpen(true); setMenuOpen(false) }}>Daftar</Button>
+              </div>
             </nav>
           </div>
         )}

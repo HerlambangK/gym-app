@@ -21,32 +21,32 @@ type InvoiceRow = {
 
 export function MemberTable({ members = [] }: { members?: MemberRow[] }) {
   return (
-    <Card>
+    <Card className="min-w-0 overflow-hidden">
       <CardHeader>
-        <CardTitle>Members</CardTitle>
+        <CardTitle>Member</CardTitle>
       </CardHeader>
       <CardContent className="overflow-x-auto">
-        <Table>
+        <Table className="min-w-[42rem]">
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Plan</TableHead>
+              <TableHead className="sticky left-0 z-10 bg-card">Nama</TableHead>
+              <TableHead>Paket</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Expires</TableHead>
+              <TableHead>Berakhir</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {members.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
-                  No members found
+                  Belum ada member
                 </TableCell>
               </TableRow>
             ) : (
               members.map((member, i) => (
                 <TableRow key={i}>
-                  <TableCell className="font-medium">{member.name}</TableCell>
-                  <TableCell>{member.plan}</TableCell>
+                  <TableCell className="sticky left-0 z-10 max-w-[12rem] truncate bg-card font-medium" title={member.name}>{member.name}</TableCell>
+                  <TableCell className="max-w-[12rem] truncate" title={member.plan}>{member.plan}</TableCell>
                   <TableCell>
                     <Badge variant={member.status === "ACTIVE" ? "success" : member.status === "EXPIRING" ? "warning" : "muted"}>
                       {member.status}
@@ -65,36 +65,36 @@ export function MemberTable({ members = [] }: { members?: MemberRow[] }) {
 
 export function InvoiceTable({ invoices = [] }: { invoices?: InvoiceRow[] }) {
   return (
-    <Card>
+    <Card className="min-w-0 overflow-hidden">
       <CardHeader>
-        <CardTitle>Invoices</CardTitle>
+        <CardTitle>Invoice</CardTitle>
       </CardHeader>
       <CardContent className="overflow-x-auto">
-        <Table>
+        <Table className="min-w-[52rem]">
           <TableHeader>
             <TableRow>
-              <TableHead>Invoice</TableHead>
+              <TableHead className="sticky left-0 z-10 bg-card">Invoice</TableHead>
               <TableHead>Member</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Amount</TableHead>
+              <TableHead>Paket</TableHead>
+              <TableHead className="text-right">Nominal</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Method</TableHead>
+              <TableHead>Metode</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {invoices.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                  No invoices found
+                  Belum ada invoice
                 </TableCell>
               </TableRow>
             ) : (
               invoices.map((invoice, i) => (
                 <TableRow key={i}>
-                  <TableCell className="font-medium">{invoice.number}</TableCell>
-                  <TableCell>{invoice.member}</TableCell>
-                  <TableCell>{invoice.plan}</TableCell>
-                  <TableCell>{rupiah.format(invoice.amount)}</TableCell>
+                  <TableCell className="sticky left-0 z-10 max-w-[10rem] truncate bg-card font-medium" title={invoice.number}>{invoice.number}</TableCell>
+                  <TableCell className="max-w-[12rem] truncate" title={invoice.member}>{invoice.member}</TableCell>
+                  <TableCell className="max-w-[12rem] truncate" title={invoice.plan}>{invoice.plan}</TableCell>
+                  <TableCell className="text-right tabular-nums">{rupiah.format(invoice.amount)}</TableCell>
                   <TableCell>
                     <Badge variant={invoice.status === "PAID" ? "success" : invoice.status === "PENDING" ? "warning" : "muted"}>
                       {invoice.status}

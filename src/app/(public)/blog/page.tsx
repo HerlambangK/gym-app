@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { getBlogPosts } from "@/lib/db/blog"
 
+export const dynamic = "force-dynamic"
+
 export default async function Page() {
   const posts = await getBlogPosts("PUBLIC")
 

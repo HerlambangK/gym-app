@@ -10,18 +10,22 @@ export function MetricCard({
   value: number;
   helper: string;
 }) {
-  const isMoney = label.toLowerCase().includes("revenue") || label.toLowerCase().includes("expense") || label.toLowerCase().includes("profit");
+  const normalizedLabel = label.toLowerCase();
+  const isMoney = ["revenue", "expense", "profit", "pendapatan", "pengeluaran", "laba", "biaya"].some((term) =>
+    normalizedLabel.includes(term),
+  );
 
   return (
-    <Card>
+    <Card className="min-w-0 overflow-hidden">
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm text-muted-foreground">{label}</CardTitle>
+        <CardTitle className="truncate text-sm text-muted-foreground">{label}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="text-2xl font-semibold">{isMoney ? rupiah.format(value) : number.format(value)}</p>
-        <p className="mt-1 text-xs text-muted-foreground">{helper}</p>
+      <CardContent className="min-w-0">
+        <p className="truncate text-xl font-semibold tabular-nums sm:text-2xl" title={isMoney ? rupiah.format(value) : number.format(value)}>
+          {isMoney ? rupiah.format(value) : number.format(value)}
+        </p>
+        <p className="mt-1 truncate text-xs text-muted-foreground" title={helper}>{helper}</p>
       </CardContent>
     </Card>
   );
 }
-

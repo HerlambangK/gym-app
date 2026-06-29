@@ -5,6 +5,7 @@ import { getActiveSubscriptionCount } from "@/lib/db/subscriptions"
 import { getTodayCheckInCount } from "@/lib/db/attendances"
 import { getTotalExpensesThisMonth } from "@/lib/db/expenses"
 import { OwnerOverview, type SummaryItem } from "@/components/dashboard/pages"
+import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { redirect } from "next/navigation"
 
 export default async function Page() {
@@ -23,13 +24,23 @@ export default async function Page() {
   ])
 
   const summary: SummaryItem[] = [
-    { label: "Revenue this month", value: revenue.totalRevenue, helper: `${revenue.paidCount} paid invoices` },
-    { label: "Today check-ins", value: todayCheckIns, helper: "Active sessions today" },
-    { label: "Expenses this month", value: expenses, helper: "Operating costs" },
-    { label: "Net profit", value: revenue.totalRevenue - expenses, helper: "Revenue minus expenses" },
-    { label: "Active members", value: activeMembers, helper: "With active subscription" },
-    { label: "Pending invoices", value: revenue.pendingCount, helper: "Awaiting payment" },
+    { label: "Pendapatan bulan ini", value: revenue.totalRevenue, helper: `${revenue.paidCount} invoice lunas` },
+    { label: "Check-in hari ini", value: todayCheckIns, helper: "Sesi aktif hari ini" },
+    { label: "Pengeluaran bulan ini", value: expenses, helper: "Biaya operasional" },
+    { label: "Laba bersih", value: revenue.totalRevenue - expenses, helper: "Pendapatan dikurangi biaya" },
+    { label: "Member aktif", value: activeMembers, helper: "Dengan subscription aktif" },
+    { label: "Invoice pending", value: revenue.pendingCount, helper: "Menunggu pembayaran" },
   ]
 
-  return <OwnerOverview summary={summary} />
+  return (
+    <div className="space-y-6">
+      <DashboardPageHeader
+        eyebrow="Owner"
+        title="Ringkasan Bisnis Gym"
+        description="Pantau pendapatan, biaya, member aktif, dan aktivitas check-in dari satu layar operasional."
+        status="Data bulan berjalan"
+      />
+      <OwnerOverview summary={summary} />
+    </div>
+  )
 }

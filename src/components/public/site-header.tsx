@@ -2,9 +2,10 @@ import Link from "next/link"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { logoutAction } from "@/lib/auth"
 import { extractRoleCode, getDashboardPathForRole } from "@/lib/auth-routing"
-import { Dumbbell, LogIn, Menu, User, LogOut } from "lucide-react"
+import { Dumbbell, LogIn, User, LogOut } from "lucide-react"
 import { brand, navItems } from "@/data/gym"
 import { Button } from "@/components/ui/button"
+import { PublicMobileNav } from "@/components/public/mobile-nav"
 
 export async function SiteHeader() {
   const supabase = await createServerSupabaseClient()
@@ -47,7 +48,7 @@ export async function SiteHeader() {
                 </Link>
               )}
               <form action={logoutAction}>
-                <Button type="submit" variant="ghost" size="sm"><LogOut size={16} /></Button>
+                <Button type="submit" variant="ghost" size="sm" aria-label="Keluar"><LogOut size={16} /></Button>
               </form>
             </>
           ) : (
@@ -60,9 +61,7 @@ export async function SiteHeader() {
               </Link>
             </>
           )}
-          <Button variant="outline" size="icon" className="md:hidden" aria-label="Menu">
-            <Menu size={18} />
-          </Button>
+          <PublicMobileNav navItems={navItems} dashboardLink={dashboardLink} />
         </div>
       </div>
     </header>
