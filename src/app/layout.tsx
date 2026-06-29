@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import "./globals.css";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "ForgeFit Studio | Gym Management",
@@ -14,10 +15,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className="h-full antialiased">
+    <html lang="id" className={cn("h-full antialiased", "font-sans")}>
       <body className="min-h-full">
         {children}
-        <Toaster richColors position="top-right" />
+        <Toaster richColors position="top-right" closeButton />
       </body>
     </html>
   );

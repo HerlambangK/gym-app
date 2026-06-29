@@ -1,20 +1,37 @@
-import { createClient } from "@supabase/supabase-js";
-import type { WebSocketLikeConstructor } from "@supabase/realtime-js";
-import WebSocket from "ws";
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseSecretKey =
-  process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export function createServerSupabaseClient() {
-  if (!supabaseUrl || !supabaseSecretKey) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SECRET_KEY");
-  }
+export async function createServerSupabaseClient() {
+  const cookieStore = await cookies()
 
-  return createClient(supabaseUrl, supabaseSecretKey, {
-    auth: { persistSession: false },
-    realtime: {
-      transport: WebSocket as unknown as WebSocketLikeConstructor,
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll()
+      },
+      setAll(cookiesToSet) {
+        for (const { name, value, options } of cookiesToSet) {
+          cookieStore.set(name, value, options)
+        }
+      },
     },
-  });
+  })
+}
+
+export async function createAdminSupabaseClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+
+  const { createClient } = await import("@supabase/supabase-js")
+  const { default: WebSocket } = await import("ws")
+  type SupabaseOptions = NonNullable<Parameters<typeof createClient>[2]>
+  type RealtimeTransport = NonNullable<NonNullable<SupabaseOptions["realtime"]>["transport"]>
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: { persistSession: false },
+    realtime: { transport: WebSocket as unknown as RealtimeTransport },
+  })
 }

@@ -1,9 +1,27 @@
-import Link from "next/link";
-import { Dumbbell, LogIn, Menu } from "lucide-react";
-import { brand, navItems } from "@/data/gym";
-import { Button } from "@/components/ui/button";
+import Link from "next/link"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { logoutAction } from "@/lib/auth"
+import { extractRoleCode, getDashboardPathForRole } from "@/lib/auth-routing"
+import { Dumbbell, LogIn, Menu, User, LogOut } from "lucide-react"
+import { brand, navItems } from "@/data/gym"
+import { Button } from "@/components/ui/button"
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  async function getDashboardLink() {
+    if (!user) return null
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("roles(code)")
+      .eq("user_id", user.id)
+      .maybeSingle()
+    return getDashboardPathForRole(extractRoleCode(roleData))
+  }
+
+  const dashboardLink = await getDashboardLink()
+
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
@@ -21,17 +39,32 @@ export function SiteHeader() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <Link href="/login" className="hidden sm:block">
-            <Button variant="ghost" size="sm"><LogIn size={16} /> Login</Button>
-          </Link>
-          <Link href="/register">
-            <Button size="sm">Daftar</Button>
-          </Link>
-          <Button variant="outline" size="icon" className="md:hidden" aria-label="Open menu">
+          {user ? (
+            <>
+              {dashboardLink && (
+                <Link href={dashboardLink}>
+                  <Button size="sm" variant="outline"><User size={16} /> Dashboard</Button>
+                </Link>
+              )}
+              <form action={logoutAction}>
+                <Button type="submit" variant="ghost" size="sm"><LogOut size={16} /></Button>
+              </form>
+            </>
+          ) : (
+            <>
+              <Link href="/?action=login" className="hidden sm:block">
+                <Button variant="ghost" size="sm"><LogIn size={16} /> Masuk</Button>
+              </Link>
+              <Link href="/?action=register">
+                <Button size="sm">Daftar</Button>
+              </Link>
+            </>
+          )}
+          <Button variant="outline" size="icon" className="md:hidden" aria-label="Menu">
             <Menu size={18} />
           </Button>
         </div>
       </div>
     </header>
-  );
+  )
 }

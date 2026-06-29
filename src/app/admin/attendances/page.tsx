@@ -1,6 +1,15 @@
-import { AttendanceChart } from "@/components/charts/revenue-chart";
+import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getUserRole } from "@/lib/db/users"
+import { redirect } from "next/navigation"
+import { AttendanceChart } from "@/components/charts/revenue-chart"
 
-export default function Page() {
-  return <AttendanceChart />;
+export default async function Page() {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/login")
+
+  const role = await getUserRole(user.id)
+  if (!role || role === "MEMBER") redirect("/member/dashboard")
+
+  return <AttendanceChart />
 }
-

@@ -1,9 +1,9 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient } from "@/lib/supabase-server"
 
 export async function GET() {
   try {
-    const supabase = createServerSupabaseClient();
-    const { data, error } = await supabase.from("roles").select("code").limit(1);
+    const supabase = await createServerSupabaseClient()
+    const { data, error } = await supabase.from("roles").select("code").limit(1)
 
     if (error) {
       return Response.json(
@@ -14,14 +14,14 @@ export async function GET() {
           message: error.message,
         },
         { status: 200 },
-      );
+      )
     }
 
     return Response.json({
       connected: true,
       schemaReady: true,
       sampleRows: data.length,
-    });
+    })
   } catch (error) {
     return Response.json(
       {
@@ -30,7 +30,6 @@ export async function GET() {
         message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 },
-    );
+    )
   }
 }
-

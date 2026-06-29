@@ -1,16 +1,9 @@
-import { createClient } from "@supabase/supabase-js";
+import type { CookieOptions } from "@supabase/ssr"
+import { createBrowserClient } from "@supabase/ssr"
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabasePublishableKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 export function createBrowserSupabaseClient() {
-  if (!supabaseUrl || !supabasePublishableKey) {
-    throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-    );
-  }
-
-  return createClient(supabaseUrl, supabasePublishableKey);
+  return createBrowserClient(supabaseUrl, supabaseAnonKey)
 }

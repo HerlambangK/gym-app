@@ -1,16 +1,36 @@
 create extension if not exists "pgcrypto";
 
-create type user_status as enum ('ACTIVE', 'INACTIVE', 'BANNED');
-create type member_type as enum ('DAILY', 'SUBSCRIPTION', 'TRIAL');
-create type member_status as enum ('ACTIVE', 'INACTIVE', 'FROZEN', 'BANNED');
-create type plan_type as enum ('DAILY', 'MONTHLY', 'TRIAL');
-create type subscription_status as enum ('PENDING_PAYMENT', 'ACTIVE', 'EXPIRED', 'CANCELLED', 'FROZEN');
-create type invoice_status as enum ('PENDING', 'PAID', 'EXPIRED', 'FAILED', 'CANCELLED', 'REFUNDED');
-create type attendance_status as enum ('CHECKED_IN', 'CHECKED_OUT', 'AUTO_CHECKED_OUT', 'FAILED');
-create type blog_access_type as enum ('PUBLIC', 'SUBSCRIBER_ONLY');
-create type blog_status as enum ('DRAFT', 'PUBLISHED', 'ARCHIVED');
+do $$ begin
+  if not exists (select 1 from pg_type where typname = 'user_status') then
+    create type user_status as enum ('ACTIVE', 'INACTIVE', 'BANNED');
+  end if;
+  if not exists (select 1 from pg_type where typname = 'member_type') then
+    create type member_type as enum ('DAILY', 'SUBSCRIPTION', 'TRIAL');
+  end if;
+  if not exists (select 1 from pg_type where typname = 'member_status') then
+    create type member_status as enum ('ACTIVE', 'INACTIVE', 'FROZEN', 'BANNED');
+  end if;
+  if not exists (select 1 from pg_type where typname = 'plan_type') then
+    create type plan_type as enum ('DAILY', 'MONTHLY', 'TRIAL');
+  end if;
+  if not exists (select 1 from pg_type where typname = 'subscription_status') then
+    create type subscription_status as enum ('PENDING_PAYMENT', 'ACTIVE', 'EXPIRED', 'CANCELLED', 'FROZEN');
+  end if;
+  if not exists (select 1 from pg_type where typname = 'invoice_status') then
+    create type invoice_status as enum ('PENDING', 'PAID', 'EXPIRED', 'FAILED', 'CANCELLED', 'REFUNDED');
+  end if;
+  if not exists (select 1 from pg_type where typname = 'attendance_status') then
+    create type attendance_status as enum ('CHECKED_IN', 'CHECKED_OUT', 'AUTO_CHECKED_OUT', 'FAILED');
+  end if;
+  if not exists (select 1 from pg_type where typname = 'blog_access_type') then
+    create type blog_access_type as enum ('PUBLIC', 'SUBSCRIBER_ONLY');
+  end if;
+  if not exists (select 1 from pg_type where typname = 'blog_status') then
+    create type blog_status as enum ('DRAFT', 'PUBLISHED', 'ARCHIVED');
+  end if;
+end $$;
 
-create table public.users (
+create table if not exists public.users (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   email text unique not null,
@@ -21,7 +41,7 @@ create table public.users (
   updated_at timestamptz not null default now()
 );
 
-create table public.roles (
+create table if not exists public.roles (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   code text unique not null,
@@ -30,7 +50,7 @@ create table public.roles (
   updated_at timestamptz not null default now()
 );
 
-create table public.permissions (
+create table if not exists public.permissions (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
   name text not null,
@@ -39,19 +59,19 @@ create table public.permissions (
   updated_at timestamptz not null default now()
 );
 
-create table public.role_permissions (
+create table if not exists public.role_permissions (
   role_id uuid references public.roles(id) on delete cascade,
   permission_id uuid references public.permissions(id) on delete cascade,
   primary key (role_id, permission_id)
 );
 
-create table public.user_roles (
+create table if not exists public.user_roles (
   user_id uuid references public.users(id) on delete cascade,
   role_id uuid references public.roles(id) on delete cascade,
   primary key (user_id, role_id)
 );
 
-create table public.branches (
+create table if not exists public.branches (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   address text not null,
@@ -67,7 +87,7 @@ create table public.branches (
   updated_at timestamptz not null default now()
 );
 
-create table public.members (
+create table if not exists public.members (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
   member_code text unique not null,
@@ -78,7 +98,7 @@ create table public.members (
   updated_at timestamptz not null default now()
 );
 
-create table public.membership_plans (
+create table if not exists public.membership_plans (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   code text unique not null,
@@ -91,7 +111,7 @@ create table public.membership_plans (
   updated_at timestamptz not null default now()
 );
 
-create table public.features (
+create table if not exists public.features (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
   name text not null,
@@ -103,7 +123,7 @@ create table public.features (
   updated_at timestamptz not null default now()
 );
 
-create table public.plan_features (
+create table if not exists public.plan_features (
   id uuid primary key default gen_random_uuid(),
   plan_id uuid not null references public.membership_plans(id) on delete cascade,
   feature_id uuid not null references public.features(id) on delete cascade,
@@ -113,7 +133,7 @@ create table public.plan_features (
   unique (plan_id, feature_id)
 );
 
-create table public.invoices (
+create table if not exists public.invoices (
   id uuid primary key default gen_random_uuid(),
   invoice_number text unique not null,
   member_id uuid not null references public.members(id),
@@ -125,7 +145,7 @@ create table public.invoices (
   updated_at timestamptz not null default now()
 );
 
-create table public.subscriptions (
+create table if not exists public.subscriptions (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null references public.members(id),
   plan_id uuid not null references public.membership_plans(id),
@@ -137,7 +157,7 @@ create table public.subscriptions (
   updated_at timestamptz not null default now()
 );
 
-create table public.payments (
+create table if not exists public.payments (
   id uuid primary key default gen_random_uuid(),
   invoice_id uuid not null references public.invoices(id),
   provider text not null,
@@ -152,7 +172,7 @@ create table public.payments (
   updated_at timestamptz not null default now()
 );
 
-create table public.attendances (
+create table if not exists public.attendances (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null references public.members(id),
   branch_id uuid not null references public.branches(id),
@@ -173,7 +193,7 @@ create table public.attendances (
   updated_at timestamptz not null default now()
 );
 
-create table public.expenses (
+create table if not exists public.expenses (
   id uuid primary key default gen_random_uuid(),
   branch_id uuid references public.branches(id),
   category text not null,
@@ -187,7 +207,7 @@ create table public.expenses (
   updated_at timestamptz not null default now()
 );
 
-create table public.branding_settings (
+create table if not exists public.branding_settings (
   id uuid primary key default gen_random_uuid(),
   brand_name text not null,
   tagline text,
@@ -212,7 +232,7 @@ create table public.branding_settings (
   updated_at timestamptz not null default now()
 );
 
-create table public.blog_posts (
+create table if not exists public.blog_posts (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   slug text unique not null,
@@ -227,7 +247,7 @@ create table public.blog_posts (
   updated_at timestamptz not null default now()
 );
 
-create table public.nutrition_logs (
+create table if not exists public.nutrition_logs (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null references public.members(id),
   log_date date not null,
@@ -243,7 +263,7 @@ create table public.nutrition_logs (
   unique (member_id, log_date)
 );
 
-create table public.audit_logs (
+create table if not exists public.audit_logs (
   id uuid primary key default gen_random_uuid(),
   actor_user_id uuid references public.users(id),
   action text not null,

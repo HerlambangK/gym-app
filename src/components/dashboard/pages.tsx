@@ -1,45 +1,50 @@
-import { AttendanceChart, RevenueChart } from "@/components/charts/revenue-chart";
-import { InvoiceTable, MemberTable } from "@/components/dashboard/data-table";
-import { MetricCard } from "@/components/dashboard/metric-card";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { dashboardSummary, premiumFeatures, roleCards } from "@/data/gym";
-import { rolePermissions } from "@/lib/rbac";
+import { RevenueChart } from "@/components/charts/revenue-chart"
+import { InvoiceTable, MemberTable } from "@/components/dashboard/data-table"
+import { MetricCard } from "@/components/dashboard/metric-card"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { premiumFeatures, roleCards } from "@/data/gym"
+import { rolePermissions } from "@/lib/rbac"
 
-export function OwnerOverview() {
+export type SummaryItem = {
+  label: string
+  value: number
+  helper: string
+}
+
+export function OwnerOverview({ summary }: { summary: SummaryItem[] }) {
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {dashboardSummary.map((item) => (
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {summary.map((item) => (
           <MetricCard key={item.label} {...item} />
         ))}
       </div>
       <div className="grid gap-6 xl:grid-cols-2">
         <RevenueChart />
-        <AttendanceChart />
       </div>
       <div className="grid gap-6 xl:grid-cols-2">
         <InvoiceTable />
         <MemberTable />
       </div>
     </div>
-  );
+  )
 }
 
 export function AdminOverview() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
-        {dashboardSummary.slice(4, 7).map((item) => (
-          <MetricCard key={item.label} {...item} />
-        ))}
+        <MetricCard label="Check-ins Today" value={0} helper="Real-time from attendance" />
+        <MetricCard label="Active Members" value={0} helper="Active subscriptions" />
+        <MetricCard label="Pending Invoices" value={0} helper="Unpaid" />
       </div>
       <div className="grid gap-6 xl:grid-cols-2">
         <MemberTable />
         <InvoiceTable />
       </div>
     </div>
-  );
+  )
 }
 
 export function FeatureManagement() {
@@ -58,13 +63,13 @@ export function FeatureManagement() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Owner dapat toggle fitur sistem. Jika OFF, fitur terkunci walaupun plan member mendukung.
+              Owner can toggle system features. If OFF, the feature is locked even if the plan supports it.
             </p>
           </CardContent>
         </Card>
       ))}
     </div>
-  );
+  )
 }
 
 export function SettingsOverview() {
@@ -72,8 +77,8 @@ export function SettingsOverview() {
     <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
       <Card>
         <CardHeader>
-          <CardTitle>Branding & Theme</CardTitle>
-          <CardDescription>Dynamic CSS variables siap diisi dari Supabase.</CardDescription>
+          <CardTitle>Branding and Theme</CardTitle>
+          <CardDescription>Dynamic CSS variables loaded from Supabase.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {["Premium Dark", "Clean Light", "Red Energy", "Luxury Gold", "Green Performance", "Blue Corporate"].map((theme) => (
@@ -86,8 +91,8 @@ export function SettingsOverview() {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>RBAC Matrix Snapshot</CardTitle>
-          <CardDescription>Server guard memakai helper requirePermission.</CardDescription>
+          <CardTitle>RBAC Matrix</CardTitle>
+          <CardDescription>Server guard uses requirePermission helper.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-3 md:grid-cols-3">
           {roleCards.map((role) => (
@@ -102,6 +107,5 @@ export function SettingsOverview() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
-
