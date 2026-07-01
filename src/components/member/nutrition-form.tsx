@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Progress } from "@/components/ui/progress"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Apple } from "lucide-react"
 
 type NutritionLog = {
   id: string
@@ -111,7 +113,7 @@ export function NutritionForm({
             <div>
               <div className="mb-2 flex items-center justify-between text-sm">
                 <span>Kalori</span>
-                <span>{calories} / {targetCalories} kcal</span>
+                <span className="tabular-nums">{calories} / {targetCalories} kcal</span>
               </div>
               <Progress value={Math.min(100, Math.round((calories / targetCalories) * 100))} />
             </div>
@@ -124,24 +126,56 @@ export function NutritionForm({
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Riwayat Nutrisi</CardTitle>
-            <CardDescription>Log terakhir untuk membaca pola makan member.</CardDescription>
+          <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
+            <div className="flex items-center gap-2">
+              <Apple className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Riwayat Nutrisi</CardTitle>
+              <span className="ml-1 text-sm text-muted-foreground">({logs.length})</span>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {logs.length ? logs.map((log) => (
-              <div key={log.id} className="flex flex-col gap-2 rounded-xl border border-border p-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-medium">{log.food_name || "Makanan"}</p>
-                  <p className="text-sm text-muted-foreground">{new Date(log.log_date).toLocaleDateString("id-ID")}</p>
-                </div>
-                <div className="text-sm font-semibold">{log.calories || 0} kcal</div>
-              </div>
-            )) : (
-              <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-                Belum ada log nutrisi.
-              </p>
-            )}
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10 text-center">#</TableHead>
+                  <TableHead>Makanan</TableHead>
+                  <TableHead>Tanggal</TableHead>
+                  <TableHead className="text-right">Kalori</TableHead>
+                  <TableHead className="text-right">Protein</TableHead>
+                  <TableHead className="text-right">Karbo</TableHead>
+                  <TableHead className="text-right">Lemak</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {logs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="py-12 text-center text-muted-foreground">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                          <Apple className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm">Belum ada log nutrisi</p>
+                        <p className="text-xs text-muted-foreground/60">Catat asupan harian untuk mulai melacak pola makan</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  logs.map((log, i) => (
+                    <TableRow key={log.id}>
+                      <TableCell className="text-center text-xs text-muted-foreground">{i + 1}</TableCell>
+                      <TableCell className="font-medium">{log.food_name || "Makanan"}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(log.log_date).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{log.calories || 0}</TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">{log.protein_gram || "-"}</TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">{log.carbs_gram || "-"}</TableCell>
+                      <TableCell className="text-right tabular-nums text-muted-foreground">{log.fat_gram || "-"}</TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>
@@ -174,7 +208,7 @@ function MiniStat({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-xl border border-border p-3">
       <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold">{value}</p>
+      <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
     </div>
   )
 }

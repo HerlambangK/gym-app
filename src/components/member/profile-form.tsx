@@ -21,21 +21,28 @@ export function ProfileForm({
   verified: boolean
 }) {
   const [state, action, pending] = useActionState(saveMemberProfile, initialState)
+  const isPremium = member?.member_type === "PREMIUM"
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
       <Card>
         <CardHeader>
-          <CardTitle>Ringkasan Akun</CardTitle>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <CardTitle>Ringkasan Akun</CardTitle>
+            {isPremium ? (
+              <Badge className="premium-gold-badge">MEMBER PREMIUM</Badge>
+            ) : null}
+          </div>
           <CardDescription>Status akun, member code, dan tipe membership.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <ProfileRow label="Email" value={email} />
           <ProfileRow label="Member Code" value={member?.member_code || "-"} />
-          <ProfileRow label="Tipe" value={member?.member_type || "MEMBER"} />
+          <ProfileRow label="Tipe" value={isPremium ? "Member Premium" : member?.member_type || "MEMBER"} />
           <div className="flex items-center justify-between rounded-xl border border-border p-3">
             <span className="text-sm text-muted-foreground">Status</span>
             <div className="flex flex-wrap justify-end gap-2">
+              {isPremium ? <Badge className="premium-gold-badge">GOLD ACTIVE</Badge> : null}
               <Badge variant={member?.status === "ACTIVE" ? "success" : "muted"}>{member?.status || "ACTIVE"}</Badge>
               <Badge variant={verified ? "success" : "warning"}>{verified ? "VERIFIED" : "UNVERIFIED"}</Badge>
             </div>

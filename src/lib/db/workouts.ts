@@ -9,16 +9,25 @@ export type WorkoutExerciseInput = {
   loadNote?: string
 }
 
+function getClient() {
+  return createAdminSupabaseClient()
+}
+
 export async function getActiveWorkoutProgram(memberId: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase
+  const supabase = await getClient()
+  const { data, error } = await supabase
     .from("workout_programs")
-    .select("*, workout_sessions(*, workout_exercises(*))")
+    .select("id, title, goal, is_active, created_at, updated_at, workout_sessions(id, day_name, session_order, workout_exercises(id, exercise_name, exercise_type, sets, reps, load_note, exercise_order))")
     .eq("member_id", memberId)
     .eq("is_active", true)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle()
+
+  if (error) {
+    console.error("getActiveWorkoutProgram error:", error)
+    return null
+  }
 
   return data
 }
@@ -29,7 +38,7 @@ export async function replaceActiveWorkoutProgram(input: {
   goal?: string
   exercises: WorkoutExerciseInput[]
 }) {
-  const supabase = await createAdminSupabaseClient()
+  const supabase = await getClient()
 
   await supabase
     .from("workout_programs")
@@ -56,21 +65,25 @@ export async function replaceActiveWorkoutProgram(input: {
     return acc
   }, {})
 
-  let sessionOrder = 1
-  for (const [dayName, exercises] of Object.entries(grouped)) {
-    const { data: session, error: sessionError } = await supabase
-      .from("workout_sessions")
-      .insert({
-        program_id: program.id,
-        day_name: dayName,
-        session_order: sessionOrder,
-      })
-      .select()
-      .single()
+  const sessionInserts = Object.entries(grouped).map(([dayName], index) => ({
+    program_id: program.id,
+    day_name: dayName,
+    session_order: index + 1,
+  }))
 
-    if (sessionError) throw sessionError
+  if (sessionInserts.length === 0) return program
 
-    const rows = exercises.map((exercise, index) => ({
+  const { data: sessions, error: sessionsError } = await supabase
+    .from("workout_sessions")
+    .insert(sessionInserts)
+    .select()
+
+  if (sessionsError) throw sessionsError
+
+  const exerciseInserts = sessions.flatMap((session, sessionIndex) => {
+    const dayKey = Object.entries(grouped)[sessionIndex]
+    if (!dayKey) return []
+    return dayKey[1].map((exercise, index) => ({
       session_id: session.id,
       exercise_name: exercise.exerciseName,
       exercise_type: exercise.exerciseType,
@@ -79,11 +92,23 @@ export async function replaceActiveWorkoutProgram(input: {
       load_note: exercise.loadNote || null,
       exercise_order: index + 1,
     }))
+  })
 
-    const { error: exerciseError } = await supabase.from("workout_exercises").insert(rows)
+  if (exerciseInserts.length > 0) {
+    const { error: exerciseError } = await supabase.from("workout_exercises").insert(exerciseInserts)
     if (exerciseError) throw exerciseError
-    sessionOrder += 1
   }
 
   return program
+}
+
+export async function deleteActiveWorkoutProgram(memberId: string) {
+  const supabase = await getClient()
+  const { error } = await supabase
+    .from("workout_programs")
+    .update({ is_active: false, updated_at: new Date().toISOString() })
+    .eq("member_id", memberId)
+    .eq("is_active", true)
+
+  if (error) throw error
 }

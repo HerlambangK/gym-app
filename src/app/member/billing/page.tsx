@@ -1,15 +1,38 @@
 import { redirect } from "next/navigation"
 import { DashboardPageHeader } from "@/components/dashboard/page-header"
-import { InvoiceTable } from "@/components/dashboard/data-table"
+import { BillingInvoiceTable } from "@/components/member/billing-invoice-table"
+import type { NativePaymentResult } from "@/components/public/subscribe-button"
 import { SubscribeButton } from "@/components/public/subscribe-button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { getMemberInvoices } from "@/lib/db/invoices"
 import { getMemberByUserId } from "@/lib/db/members"
 import { getPlans } from "@/lib/db/plans"
-import { getActiveSubscription } from "@/lib/db/subscriptions"
-import { rupiah } from "@/lib/format"
+import { getActiveSubscription, getSubscriptionExpiryInfo, getSubscriptionStackPreview } from "@/lib/db/subscriptions"
+import { rupiah, formatDate } from "@/lib/format"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+
+function getFirst<T>(value: T | T[] | null | undefined) {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function buildPaymentResult(invoice: Record<string, unknown>) {
+  const payment = getFirst(invoice.payments as Array<Record<string, unknown>> | Record<string, unknown> | null)
+  const charge = payment?.raw_callback
+  if (!payment || !charge || typeof charge !== "object") return null
+
+  return {
+    invoiceNumber: invoice.invoice_number as string,
+    paymentMethod: (payment.method as NativePaymentResult["paymentMethod"]) || "bca_va",
+    charge: charge as NativePaymentResult["charge"],
+    status: {
+      paymentStatus: payment.status as string,
+      invoiceStatus: invoice.status as string,
+      subscriptionStatus: invoice.status === "PAID" ? "ACTIVE" : "PENDING_PAYMENT",
+      transactionStatus: (charge as { transaction_status?: string }).transaction_status,
+    },
+  } satisfies NativePaymentResult
+}
 
 export default async function Page() {
   const supabase = await createServerSupabaseClient()
@@ -33,14 +56,26 @@ export default async function Page() {
     getActiveSubscription(member.id),
   ])
 
-  const mapped = invoices.map((inv: Record<string, unknown>) => ({
-    number: inv.invoice_number as string,
-    member: user.email || "Member",
-    plan: (inv as { membership_plans: { name: string } }).membership_plans?.name || "Unknown",
-    amount: Number(inv.amount),
-    status: inv.status as string,
-    method: "Midtrans",
-  }))
+  const activeEndDate = subscription?.end_date || null
+  const activePlanName = (subscription?.membership_plans as { name?: string } | null)?.name || null
+  const expiryInfo = getSubscriptionExpiryInfo(subscription)
+
+  const mapped = invoices.map((inv: Record<string, unknown>) => {
+    const plan = getFirst((inv as { membership_plans?: { name: string; code: string; duration_days: number } | Array<{ name: string; code: string; duration_days: number }> }).membership_plans)
+    const payment = getFirst(inv.payments as Array<Record<string, unknown>> | Record<string, unknown> | null)
+
+    return {
+      number: inv.invoice_number as string,
+      plan: plan?.name || "Unknown",
+      planCode: plan?.code || "",
+      amount: Number(inv.amount),
+      status: inv.status as string,
+      method: (payment?.method as string) || "Midtrans",
+      durationDays: Number(plan?.duration_days || 0),
+      createdAt: inv.created_at as string,
+      paymentResult: buildPaymentResult(inv),
+    }
+  })
 
   return (
     <div className="space-y-6">
@@ -50,6 +85,22 @@ export default async function Page() {
         title="Pembelian Subscription"
         description="Pilih paket membership, lanjutkan pembayaran via Midtrans, dan pantau invoice dari satu halaman."
       />
+
+      {subscription && expiryInfo.isExpiringSoon ? (
+        <div className={`rounded-xl border p-4 text-sm ${
+          expiryInfo.isCritical
+            ? "border-red-500/30 bg-red-500/10 text-red-800 dark:text-red-200"
+            : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-100"
+        }`}>
+          <p className="font-semibold">
+            {expiryInfo.isCritical ? "Subscription akan segera berakhir!" : "Subscription akan berakhir"}
+          </p>
+          <p className="mt-1">
+            {activePlanName} aktif sampai {formatDate(activeEndDate!)} ({expiryInfo.remainingDays} hari lagi).
+            Perpanjang sekarang agar masa aktif tidak terputus.
+          </p>
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-4">
         {plans.map((plan: Record<string, unknown>) => {
@@ -62,6 +113,7 @@ export default async function Page() {
             duration_days: number
           }
           const activePlan = subscription?.membership_plans?.code === p.code
+          const stack = subscription ? getSubscriptionStackPreview(subscription, p.duration_days) : null
 
           return (
             <Card key={p.id} className={activePlan ? "border-primary" : ""}>
@@ -77,14 +129,26 @@ export default async function Page() {
                   <p className="text-2xl font-semibold">{rupiah.format(Number(p.price))}</p>
                   <p className="text-sm text-muted-foreground">{p.duration_days} hari</p>
                 </div>
-                <SubscribeButton planCode={p.code} label={activePlan ? "Perpanjang Paket" : "Bayar via Midtrans"} />
+                {stack && !activePlan ? (
+                  <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+                    <p>Subscription saat ini aktif sampai <span className="font-medium text-foreground">{formatDate(activeEndDate!)}</span> ({expiryInfo.remainingDays} hari).</p>
+                    <p>Paket baru akan aktif: <span className="font-medium text-foreground">{formatDate(stack.startDate)}</span> – <span className="font-medium text-foreground">{formatDate(stack.endDate)}</span></p>
+                  </div>
+                ) : null}
+                <SubscribeButton
+                  planCode={p.code}
+                  label={activePlan ? "Perpanjang Paket" : "Pilih Pembayaran"}
+                  activeSubEndDate={activeEndDate}
+                  planName={p.name}
+                  remainingDays={expiryInfo.remainingDays}
+                />
               </CardContent>
             </Card>
           )
         })}
       </div>
 
-      <InvoiceTable invoices={mapped} />
+      <BillingInvoiceTable invoices={mapped} />
     </div>
   )
 }

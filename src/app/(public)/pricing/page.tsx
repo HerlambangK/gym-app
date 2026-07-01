@@ -43,7 +43,7 @@ export default async function Page() {
                     <p className="text-3xl font-semibold">{rupiah.format(p.price)}</p>
                     <p className="text-sm text-muted-foreground">{p.duration_days} hari</p>
                     {user ? (
-                      <SubscribeButton planCode={p.code} label="Beli via Midtrans" />
+                      <SubscribeButton planCode={p.code} label="Pilih Pembayaran" />
                     ) : (
                       <Link href="/?action=register">
                         <Button className="w-full">Daftar</Button>

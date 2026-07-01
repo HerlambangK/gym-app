@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import {
   Avatar,
   AvatarFallback,
@@ -17,23 +18,28 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar"
 import { ChevronsUpDownIcon, LogOutIcon, UserIcon } from "lucide-react"
 import { createBrowserSupabaseClient } from "@/lib/supabase"
+import type { RoleCode } from "@/types/domain"
 
 export function NavUser({
   user,
+  role,
 }: {
   user: {
     name: string
     email: string
   }
+  role: RoleCode
 }) {
-  const { isMobile } = useSidebar()
   const initials = user.name
     ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
     : user.email[0].toUpperCase()
+  const profileHref =
+    role === "MEMBER" ? "/member/profile" :
+      role === "ADMIN" ? "/admin/settings" :
+        "/owner/settings"
 
   async function handleLogout() {
     const supabase = createBrowserSupabaseClient()
@@ -47,31 +53,34 @@ export function NavUser({
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <SidebarMenuButton size="lg" className="aria-expanded:bg-muted" />
+              <SidebarMenuButton
+                size="lg"
+                className="h-14 rounded-xl border border-transparent px-2 aria-expanded:border-sidebar-border aria-expanded:bg-sidebar-accent"
+              />
             }
           >
-            <Avatar>
+            <Avatar className="size-9">
               <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
+            <div className="grid min-w-0 flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
               <span className="truncate font-medium">{user.name}</span>
-              <span className="truncate text-xs">{user.email}</span>
+              <span className="truncate text-xs text-sidebar-foreground/70">{user.email}</span>
             </div>
-            <ChevronsUpDownIcon className="ml-auto size-4" />
+            <ChevronsUpDownIcon className="ml-auto size-4 text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden" />
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-fit"
-            side={isMobile ? "bottom" : "right"}
-            align="end"
-            sideOffset={4}
+            className="w-64 p-2"
+            side="top"
+            align="start"
+            sideOffset={8}
           >
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                  <Avatar>
+                <div className="flex min-w-0 items-center gap-3 rounded-lg bg-muted/60 px-2 py-2.5 text-left text-sm">
+                  <Avatar className="size-10">
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
-                  <div className="grid flex-1 text-left text-sm leading-tight">
+                  <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
                     <span className="truncate text-xs">{user.email}</span>
                   </div>
@@ -79,12 +88,14 @@ export function NavUser({
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <UserIcon />
-              Profile
-            </DropdownMenuItem>
+            <Link href={profileHref}>
+              <DropdownMenuItem className="h-10 gap-2 px-2">
+                <UserIcon />
+                Profile
+              </DropdownMenuItem>
+            </Link>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
+            <DropdownMenuItem onClick={handleLogout} className="h-10 gap-2 px-2">
               <LogOutIcon />
               Log out
             </DropdownMenuItem>

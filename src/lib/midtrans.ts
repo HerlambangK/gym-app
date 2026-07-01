@@ -13,11 +13,22 @@ type MidtransCustomer = {
   phone?: string;
 };
 
-export type CreateSnapTransactionInput = {
+type CreateMidtransTransactionInput = {
   orderId: string;
   grossAmount: number;
   customer: MidtransCustomer;
   items: MidtransItem[];
+};
+
+export type MidtransPaymentMethod =
+  | "bca_va"
+  | "bni_va"
+  | "bri_va"
+  | "permata_va"
+  | "qris";
+
+export type CreateCoreChargeInput = CreateMidtransTransactionInput & {
+  paymentMethod: MidtransPaymentMethod;
 };
 
 const isProduction = process.env.MIDTRANS_IS_PRODUCTION === "true";
@@ -25,12 +36,6 @@ const serverKey = process.env.MIDTRANS_SERVER_KEY;
 
 export const midtransConfig = {
   merchantId: process.env.MIDTRANS_MERCHANT_ID,
-  clientKey:
-    process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY ??
-    process.env.MIDTRANS_CLIENT_KEY,
-  snapBaseUrl: isProduction
-    ? "https://app.midtrans.com"
-    : "https://app.sandbox.midtrans.com",
   apiBaseUrl: isProduction
     ? "https://api.midtrans.com"
     : "https://api.sandbox.midtrans.com",
@@ -44,8 +49,27 @@ function getServerAuthHeader() {
   return `Basic ${Buffer.from(`${serverKey}:`).toString("base64")}`;
 }
 
-export async function createSnapTransaction(input: CreateSnapTransactionInput) {
-  const response = await fetch(`${midtransConfig.snapBaseUrl}/snap/v1/transactions`, {
+function getCorePaymentPayload(paymentMethod: MidtransPaymentMethod) {
+  if (paymentMethod === "qris") {
+    return {
+      payment_type: "qris",
+      qris: {
+        acquirer: "gopay",
+      },
+    };
+  }
+
+  const bank = paymentMethod.replace("_va", "");
+  return {
+    payment_type: "bank_transfer",
+    bank_transfer: {
+      bank,
+    },
+  };
+}
+
+export async function createCoreCharge(input: CreateCoreChargeInput) {
+  const response = await fetch(`${midtransConfig.apiBaseUrl}/v2/charge`, {
     method: "POST",
     headers: {
       Accept: "application/json",
@@ -59,7 +83,7 @@ export async function createSnapTransaction(input: CreateSnapTransactionInput) {
       },
       customer_details: input.customer,
       item_details: input.items,
-      enabled_payments: ["bank_transfer", "qris", "gopay", "shopeepay"],
+      ...getCorePaymentPayload(input.paymentMethod),
     }),
   });
 
@@ -69,14 +93,98 @@ export async function createSnapTransaction(input: CreateSnapTransactionInput) {
     return {
       ok: false,
       status: response.status,
-      data,
+      data: data as Record<string, unknown>,
     };
   }
 
   return {
     ok: true,
     status: response.status,
-    data,
+    data: data as Record<string, unknown>,
+  };
+}
+
+export async function getTransactionStatus(orderId: string) {
+  const response = await fetch(`${midtransConfig.apiBaseUrl}/v2/${encodeURIComponent(orderId)}/status`, {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+      Authorization: getServerAuthHeader(),
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status,
+      data: data as Record<string, unknown>,
+    };
+  }
+
+  return {
+    ok: true,
+    status: response.status,
+    data: data as Record<string, unknown>,
+  };
+}
+
+export async function cancelTransaction(orderId: string) {
+  const response = await fetch(`${midtransConfig.apiBaseUrl}/v2/${encodeURIComponent(orderId)}/cancel`, {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      Authorization: getServerAuthHeader(),
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    return {
+      ok: false,
+      status: response.status,
+      data: data as Record<string, unknown>,
+    };
+  }
+
+  return {
+    ok: true,
+    status: response.status,
+    data: data as Record<string, unknown>,
+  };
+}
+
+export function getPaymentLifecycle(payload: {
+  transaction_status?: string;
+  fraud_status?: string;
+  status_code?: string;
+  settlement_time?: string;
+}) {
+  const transactionStatus = payload.transaction_status?.toLowerCase();
+  const fraudStatus = payload.fraud_status?.toLowerCase();
+  const hasSettlementProof = payload.status_code === "200" && Boolean(payload.settlement_time);
+
+  const isSuccess =
+    transactionStatus === "settlement" ||
+    hasSettlementProof ||
+    (transactionStatus === "capture" && fraudStatus !== "challenge" && fraudStatus !== "deny");
+  const isFailure =
+    transactionStatus === "deny" ||
+    transactionStatus === "cancel" ||
+    transactionStatus === "expire" ||
+    transactionStatus === "failure";
+  const failureInvoiceStatus =
+    transactionStatus === "expire" ? "EXPIRED" :
+      transactionStatus === "cancel" ? "CANCELLED" :
+        "FAILED";
+
+  return {
+    isSuccess,
+    isFailure,
+    paymentStatus: isSuccess ? "PAID" : isFailure ? "FAILED" : "PENDING",
+    invoiceStatus: isSuccess ? "PAID" : isFailure ? failureInvoiceStatus : "PENDING",
   };
 }
 
@@ -107,4 +215,3 @@ export function verifyMidtransSignature(payload: {
     Buffer.from(payload.signature_key),
   );
 }
-

@@ -6,7 +6,6 @@ import { saveBranchLocation, type BranchLocationState } from "@/app/actions/bran
 import { BranchMapPicker } from "@/components/location/branch-map-picker"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 
 type BranchLocation = {
@@ -65,11 +64,20 @@ export function BranchLocationForm({ branch }: { branch: BranchLocation | null }
 
     setSearchError("")
     navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({
-          latitude: Number(position.coords.latitude.toFixed(7)),
-          longitude: Number(position.coords.longitude.toFixed(7)),
-        })
+      async (position) => {
+        const lat = Number(position.coords.latitude.toFixed(7))
+        const lng = Number(position.coords.longitude.toFixed(7))
+        setLocation({ latitude: lat, longitude: lng })
+        try {
+          const res = await fetch(`/api/geo/reverse?lat=${lat}&lon=${lng}`)
+          if (res.ok) {
+            const data = await res.json()
+            if (data.concise) {
+              setAddress(data.concise)
+              setSearchQuery(data.concise)
+            }
+          }
+        } catch { /* ignore */ }
       },
       () => setSearchError("Tidak bisa mengambil lokasi perangkat. Aktifkan izin lokasi browser."),
       { enableHighAccuracy: true, timeout: 10000 },
@@ -117,116 +125,110 @@ export function BranchLocationForm({ branch }: { branch: BranchLocation | null }
   }
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(24rem,0.65fr)]">
-      <div className="space-y-4">
-        <Card className="overflow-hidden">
-          <CardHeader className="border-b border-border/70 bg-muted/30">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <div className="mb-2 flex flex-wrap gap-2">
-                  <Badge variant={branch ? "success" : "warning"}>{branch ? "Lokasi aktif" : "Belum diset"}</Badge>
-                  <Badge variant="outline">OpenStreetMap</Badge>
-                </div>
-                <CardTitle>Pin Lokasi Cabang</CardTitle>
-                <CardDescription>
-                  Cari nama gedung/tempat, pilih hasil, atau klik langsung di peta untuk mengatur titik check-in.
-                </CardDescription>
+    <div className="grid gap-8 xl:grid-cols-[minmax(0,1.45fr)_minmax(28rem,0.55fr)]">
+      <div className="min-w-0 space-y-5">
+        <section className="space-y-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap gap-2">
+                <Badge variant={branch ? "success" : "warning"}>{branch ? "Lokasi aktif" : "Belum diset"}</Badge>
+                <Badge variant="outline">OpenStreetMap</Badge>
               </div>
-              <Button type="button" variant="outline" className="gap-2" onClick={useCurrentPosition}>
-                <LocateFixed size={16} />
-                Pakai GPS Saya
+              <h2 className="text-2xl font-semibold tracking-tight">Pin Lokasi Cabang</h2>
+              <p className="mt-1 max-w-3xl text-sm leading-6 text-muted-foreground">
+                Cari nama tempat, pilih hasil yang paling tepat, atau klik langsung di peta untuk mengatur titik check-in.
+              </p>
+            </div>
+            <Button type="button" variant="outline" className="w-full gap-2 sm:w-fit" onClick={useCurrentPosition}>
+              <LocateFixed size={16} />
+              Pakai GPS Saya
+            </Button>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2 shadow-sm sm:flex-row">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault()
+                      handleSearch()
+                    }
+                  }}
+                  className="h-11 border-0 bg-transparent pl-9 shadow-none focus-visible:ring-0"
+                  placeholder="Cari tempat, gedung, jalan, atau kota"
+                />
+              </div>
+              <Button type="button" className="h-11 gap-2 px-5" onClick={handleSearch} disabled={searchLoading}>
+                <Search size={16} />
+                {searchLoading ? "Mencari..." : "Cari Lokasi"}
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4 p-4 sm:p-5">
-            <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <div className="relative flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault()
-                        handleSearch()
-                      }
-                    }}
-                    className="pl-9"
-                    placeholder="Cari gedung/tempat: Plaza Senayan, GBK, kantor cabang..."
-                  />
-                </div>
-                <Button type="button" className="gap-2" onClick={handleSearch} disabled={searchLoading}>
-                  <Search size={16} />
-                  {searchLoading ? "Mencari..." : "Cari Lokasi"}
-                </Button>
+            {searchError ? <p className="text-sm text-destructive">{searchError}</p> : null}
+            {searchResults.length ? (
+              <div className="max-h-64 space-y-2 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-sm">
+                {searchResults.map((result) => (
+                  <button
+                    key={result.place_id}
+                    type="button"
+                    className="w-full rounded-lg p-3 text-left text-sm transition hover:bg-muted"
+                    onClick={() => selectSearchResult(result)}
+                  >
+                    <span className="flex flex-wrap items-center gap-2 font-medium">
+                      Pilih titik ini
+                      {result.type ? (
+                        <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-normal uppercase text-muted-foreground">
+                          {result.class}/{result.type}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="mt-1 block leading-5 text-muted-foreground">{result.display_name}</span>
+                  </button>
+                ))}
               </div>
-              {searchError ? <p className="mt-3 text-sm text-destructive">{searchError}</p> : null}
-              {searchResults.length ? (
-                <div className="mt-3 max-h-64 space-y-2 overflow-y-auto pr-1">
-                  {searchResults.map((result) => (
-                    <button
-                      key={result.place_id}
-                      type="button"
-                      className="w-full rounded-xl border border-border bg-background p-3 text-left text-sm transition hover:border-foreground/30 hover:bg-muted"
-                      onClick={() => selectSearchResult(result)}
-                    >
-                      <span className="flex flex-wrap items-center gap-2 font-medium">
-                        Pilih titik ini
-                        {result.type ? (
-                          <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs font-normal uppercase text-muted-foreground">
-                            {result.class}/{result.type}
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="mt-1 block leading-5 text-muted-foreground">{result.display_name}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+            ) : null}
+          </div>
 
-            <BranchMapPicker
-              latitude={location.latitude}
-              longitude={location.longitude}
-              radiusMeters={radiusMeters}
-              onChange={handleMapChange}
-            />
+          <BranchMapPicker
+            latitude={location.latitude}
+            longitude={location.longitude}
+            radiusMeters={radiusMeters}
+            onChange={handleMapChange}
+          />
+        </section>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <InfoTile
-                icon={<MapPin size={18} />}
-                label="Titik pin"
-                value={`${location.latitude}, ${location.longitude}`}
-              />
-              <InfoTile
-                icon={<Navigation size={18} />}
-                label="Radius check-in"
-                value={`${radiusMeters} meter`}
-              />
-              <InfoTile
-                icon={<Building2 size={18} />}
-                label="Status"
-                value={branch ? "Siap dipakai member" : "Menunggu simpan"}
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <InfoTile
+            icon={<MapPin size={18} />}
+            label="Titik pin"
+            value={`${location.latitude}, ${location.longitude}`}
+          />
+          <InfoTile
+            icon={<Navigation size={18} />}
+            label="Radius check-in"
+            value={`${radiusMeters} meter`}
+          />
+          <InfoTile
+            icon={<Building2 size={18} />}
+            label="Status"
+            value={branch ? "Siap dipakai member" : "Menunggu simpan"}
+          />
+        </div>
       </div>
 
-      <Card className="h-fit xl:sticky xl:top-24">
-        <CardHeader>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <CardTitle>Detail Lokasi</CardTitle>
-              <CardDescription>
-                Data ini akan dipakai untuk validasi GPS check-in member.
-              </CardDescription>
-            </div>
-            <Badge variant="secondary">Admin/Owner</Badge>
+      <aside className="h-fit rounded-xl border border-border bg-card p-5 shadow-sm xl:sticky xl:top-24">
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="text-xl font-semibold tracking-tight">Detail Lokasi</h2>
+            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+              Data ini dipakai untuk validasi GPS check-in member.
+            </p>
           </div>
-        </CardHeader>
-        <CardContent>
+          <Badge variant="secondary">Admin/Owner</Badge>
+        </div>
           <form action={action} className="space-y-4">
             <input type="hidden" name="id" value={branch?.id ?? ""} />
             <input type="hidden" name="latitude" value={location.latitude} />
@@ -260,6 +262,7 @@ export function BranchLocationForm({ branch }: { branch: BranchLocation | null }
                 <Input
                   id="branch-latitude"
                   inputMode="decimal"
+                  className="font-mono text-sm"
                   value={location.latitude}
                   onChange={(event) => setLocation((current) => ({
                     ...current,
@@ -272,6 +275,7 @@ export function BranchLocationForm({ branch }: { branch: BranchLocation | null }
                 <Input
                   id="branch-longitude"
                   inputMode="decimal"
+                  className="font-mono text-sm"
                   value={location.longitude}
                   onChange={(event) => setLocation((current) => ({
                     ...current,
@@ -281,19 +285,31 @@ export function BranchLocationForm({ branch }: { branch: BranchLocation | null }
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="grid gap-2">
-                <label htmlFor="branch-radius" className="text-sm font-medium">Radius check-in</label>
+            <div className="grid gap-2">
+              <label htmlFor="branch-radius" className="text-sm font-medium">Radius check-in</label>
+              <div className="flex items-center gap-2">
                 <Input
                   id="branch-radius"
-                  name="radiusMeters"
                   type="number"
+                  inputMode="numeric"
                   min={20}
                   max={2000}
+                  step={10}
                   value={radiusMeters}
-                  onChange={(event) => setRadiusMeters(Number(event.target.value) || 100)}
+                  onChange={(event) => {
+                    const parsed = Number(event.target.value)
+                    if (!Number.isNaN(parsed)) {
+                      setRadiusMeters(Math.min(2000, Math.max(20, parsed)))
+                    }
+                  }}
+                  className="max-w-36"
                 />
+                <span className="text-sm text-muted-foreground">meter</span>
               </div>
+              <input type="hidden" name="radiusMeters" value={radiusMeters} />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
               <div className="grid gap-2">
                 <label htmlFor="branch-phone" className="text-sm font-medium">Telepon</label>
                 <Input id="branch-phone" name="phone" defaultValue={branch?.phone ?? ""} />
@@ -322,15 +338,14 @@ export function BranchLocationForm({ branch }: { branch: BranchLocation | null }
               {pending ? "Menyimpan..." : "Simpan Lokasi"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+      </aside>
     </div>
   )
 }
 
 function InfoTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-xl border border-border bg-card p-4">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm">
       <div className="text-primary">{icon}</div>
       <p className="mt-2 text-sm text-muted-foreground">{label}</p>
       <p className="mt-1 truncate text-sm font-semibold">{value}</p>

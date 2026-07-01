@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ForgeFit Studio">
+  <defs>
+    <linearGradient id="bg" x1="10" y1="7" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#18181b" />
+      <stop offset="0.55" stop-color="#050505" />
+      <stop offset="1" stop-color="#111827" />
+    </linearGradient>
+    <linearGradient id="steel" x1="14" y1="10" x2="50" y2="55" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" />
+      <stop offset="0.5" stop-color="#d4d4d8" />
+      <stop offset="1" stop-color="#71717a" />
+    </linearGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="2.4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="64" height="64" rx="15" fill="url(#bg)" />
+  <path d="M11 32h9m24 0h9M17 25v14m30-14v14" stroke="url(#steel)" stroke-width="5.2" stroke-linecap="round" />
+  <path d="M20 32h24" stroke="url(#steel)" stroke-width="6.4" stroke-linecap="round" filter="url(#softGlow)" />
+
+  <path
+    d="M24 17h18v7H31v7h9v7h-9v12h-7V17Z"
+    fill="#f8fafc"
+  />
+  <path
+    d="M35 25h9v-8H24v33h7V38h8.5L35 31v-6Z"
+    fill="url(#steel)"
+  />
+  <path d="M20 52c7.2 4.2 17 4.2 24.1 0" fill="none" stroke="#e4e4e7" stroke-width="2.5" stroke-linecap="round" opacity="0.8" />
+</svg>

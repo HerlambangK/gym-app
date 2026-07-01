@@ -4,6 +4,14 @@ import { NextResponse, type NextRequest } from "next/server"
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
+function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  timeoutMs = 10000,
+) {
+  return fetch(input, { ...init, signal: AbortSignal.timeout(timeoutMs) })
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
@@ -22,6 +30,7 @@ export async function updateSession(request: NextRequest) {
         }
       },
     },
+    global: { fetch: fetchWithTimeout },
   })
 
   const {

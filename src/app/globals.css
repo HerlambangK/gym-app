@@ -154,6 +154,25 @@ html {
   padding-inline: 1.25rem;
 }
 
+@keyframes premium-gold-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(245 158 11 / 0.32), 0 0 18px rgb(245 158 11 / 0.22);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgb(245 158 11 / 0.14), 0 0 28px rgb(245 158 11 / 0.42);
+    filter: brightness(1.12);
+  }
+}
+
+.premium-gold-badge {
+  animation: premium-gold-pulse 1.6s ease-in-out infinite;
+  border-color: rgb(245 158 11 / 0.62);
+  background: linear-gradient(135deg, #facc15 0%, #f59e0b 45%, #92400e 100%);
+  color: #111827;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

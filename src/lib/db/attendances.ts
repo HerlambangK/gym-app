@@ -8,7 +8,9 @@ export async function getActiveSession(memberId: string) {
     .eq("member_id", memberId)
     .eq("status", "CHECKED_IN")
     .is("check_out_time", null)
-    .single()
+    .order("check_in_time", { ascending: false })
+    .limit(1)
+    .maybeSingle()
   return data
 }
 
@@ -92,7 +94,7 @@ export async function getAllAttendances(limit = 50) {
   const supabase = await createAdminSupabaseClient()
   const { data } = await supabase
     .from("attendances")
-    .select("*, members(users(name)), branches(name)")
+    .select("id, check_in_time, check_out_time, duration_minutes, status, members(users(name)), branches(name)")
     .order("check_in_time", { ascending: false })
     .limit(limit)
   return data || []

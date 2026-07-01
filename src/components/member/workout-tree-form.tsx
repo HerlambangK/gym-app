@@ -1,12 +1,13 @@
 "use client"
 
 import { useActionState, useMemo, useState, type Dispatch, type SetStateAction } from "react"
-import { Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2, Dumbbell } from "lucide-react"
 import { saveWorkoutProgram, type ActionState } from "@/app/actions/member"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 type ExerciseRow = {
   id: string
@@ -131,29 +132,57 @@ export function WorkoutTreeForm({ program }: { program: WorkoutProgram }) {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Tree Preview</CardTitle>
-          <CardDescription>Struktur yang akan tersimpan sebagai program aktif.</CardDescription>
+        <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
+          <div className="flex items-center gap-2">
+            <Dumbbell className="h-5 w-5 text-muted-foreground" />
+            <CardTitle>Tree Preview</CardTitle>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {Object.entries(grouped).map(([day, exercises]) => (
-            <div key={day} className="rounded-xl border border-border p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="font-semibold">{day}</p>
-                <Badge variant="secondary">{exercises.length} latihan</Badge>
+        <CardContent className="space-y-6">
+          {Object.entries(grouped).length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <Dumbbell className="h-6 w-6 text-muted-foreground" />
               </div>
-              <div className="mt-4 space-y-3 border-l border-border pl-4">
-                {exercises.map((exercise) => (
-                  <div key={exercise.id} className="rounded-lg bg-muted/60 p-3">
-                    <p className="font-medium">{exercise.exerciseName || "Nama latihan"}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {exercise.exerciseType || "Jenis"} - {exercise.sets || 1} set - {exercise.reps || "reps bebas"}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <p className="text-sm text-muted-foreground">Belum ada latihan</p>
+              <p className="text-xs text-muted-foreground/60">Tambah latihan untuk melihat preview</p>
             </div>
-          ))}
+          ) : (
+            Object.entries(grouped).map(([day, exercises]) => (
+              <div key={day} className="rounded-lg border border-border">
+                <div className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-4 py-3">
+                  <p className="text-sm font-semibold">{day}</p>
+                  <Badge variant="secondary">{exercises.length} latihan</Badge>
+                </div>
+                <div className="p-0">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-8 text-center">#</TableHead>
+                        <TableHead>Latihan</TableHead>
+                        <TableHead>Jenis</TableHead>
+                        <TableHead className="text-center">Set</TableHead>
+                        <TableHead className="text-center">Reps</TableHead>
+                        <TableHead>Beban</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {exercises.map((exercise, idx) => (
+                        <TableRow key={exercise.id}>
+                          <TableCell className="text-center text-xs text-muted-foreground">{idx + 1}</TableCell>
+                          <TableCell className="font-medium">{exercise.exerciseName || "Nama latihan"}</TableCell>
+                          <TableCell className="text-muted-foreground">{exercise.exerciseType || "Jenis"}</TableCell>
+                          <TableCell className="text-center tabular-nums">{exercise.sets || 1}</TableCell>
+                          <TableCell className="text-center tabular-nums text-muted-foreground">{exercise.reps || "-"}</TableCell>
+                          <TableCell className="text-muted-foreground">{exercise.loadNote || "-"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
     </div>

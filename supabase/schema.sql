@@ -5,7 +5,7 @@ do $$ begin
     create type user_status as enum ('ACTIVE', 'INACTIVE', 'BANNED');
   end if;
   if not exists (select 1 from pg_type where typname = 'member_type') then
-    create type member_type as enum ('DAILY', 'SUBSCRIPTION', 'TRIAL');
+    create type member_type as enum ('DAILY', 'SUBSCRIPTION', 'PREMIUM', 'TRIAL');
   end if;
   if not exists (select 1 from pg_type where typname = 'member_status') then
     create type member_status as enum ('ACTIVE', 'INACTIVE', 'FROZEN', 'BANNED');

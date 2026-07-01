@@ -44,6 +44,17 @@ export async function createNutritionLog(input: {
   return data
 }
 
+export async function deleteNutritionLog(memberId: string, logId: string) {
+  const supabase = await createAdminSupabaseClient()
+  const { error } = await supabase
+    .from("nutrition_logs")
+    .delete()
+    .eq("id", logId)
+    .eq("member_id", memberId)
+
+  if (error) throw error
+}
+
 export async function getNutritionTarget(memberId: string) {
   const supabase = await createAdminSupabaseClient()
   const { data } = await supabase

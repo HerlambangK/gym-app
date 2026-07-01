@@ -1,14 +1,15 @@
 import { z } from "zod"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
-import { createSnapTransaction } from "@/lib/midtrans"
+import { createCoreCharge } from "@/lib/midtrans"
 import { getMemberByUserId } from "@/lib/db/members"
 import { getPlanByCode } from "@/lib/db/plans"
 import { createInvoice } from "@/lib/db/invoices"
-import { createPayment } from "@/lib/db/payments"
+import { createPayment, updatePaymentStatus } from "@/lib/db/payments"
 import { createSubscription } from "@/lib/db/subscriptions"
 
 const schema = z.object({
   planCode: z.string().min(2),
+  paymentMethod: z.enum(["bca_va", "bni_va", "bri_va", "permata_va", "qris"]),
   customerName: z.string().optional(),
   customerEmail: z.string().email().optional(),
   customerPhone: z.string().optional(),
@@ -52,16 +53,18 @@ export async function POST(request: Request) {
 
   const orderId = invoice.invoice_number
 
-  await createPayment({
+  const payment = await createPayment({
     invoiceId: invoice.id,
     provider: "midtrans",
     providerOrderId: orderId,
+    method: parsed.data.paymentMethod,
     amount: Number(plan.price),
   })
 
-  const result = await createSnapTransaction({
+  const result = await createCoreCharge({
     orderId,
     grossAmount: Number(plan.price),
+    paymentMethod: parsed.data.paymentMethod,
     customer: {
       first_name: customerName,
       email: parsed.data.customerEmail || user.email,
@@ -75,10 +78,20 @@ export async function POST(request: Request) {
     }],
   })
 
+  if (result.ok) {
+    await updatePaymentStatus(
+      payment.id,
+      "PENDING",
+      typeof result.data.transaction_id === "string" ? result.data.transaction_id : undefined,
+      result.data,
+    )
+  }
+
   return Response.json({
     invoiceNumber: invoice.invoice_number,
     subscriptionId: subscription.id,
-    midtrans: result.ok ? result.data : null,
+    paymentMethod: parsed.data.paymentMethod,
+    charge: result.ok ? result.data : null,
     error: result.ok ? null : result.data,
   }, { status: result.ok ? 200 : 422 })
 }

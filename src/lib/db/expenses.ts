@@ -44,7 +44,7 @@ export async function getTotalExpensesThisMonth() {
   const { data } = await supabase
     .from("expenses")
     .select("amount")
-    .gte("created_at", startOfMonth.toISOString())
+    .gte("expense_date", startOfMonth.toISOString().split("T")[0])
 
   return data?.reduce((sum, exp) => sum + Number(exp.amount), 0) || 0
 }

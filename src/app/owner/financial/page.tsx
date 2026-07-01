@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getUserRole } from "@/lib/db/users"
 import { getInvoiceStats } from "@/lib/db/invoices"
 import { getTotalExpensesThisMonth } from "@/lib/db/expenses"
+import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { redirect } from "next/navigation"
 
 export default async function Page() {
@@ -20,14 +21,20 @@ export default async function Page() {
   ])
 
   const items = [
-    { label: "Revenue this month", value: revenue.totalRevenue, helper: `${revenue.paidCount} paid invoices` },
-    { label: "Expenses this month", value: expenses, helper: "Operating costs" },
-    { label: "Net profit", value: revenue.totalRevenue - expenses, helper: "Revenue minus expenses" },
-    { label: "Pending invoices", value: revenue.pendingCount, helper: "Awaiting payment" },
+    { label: "Pendapatan bulan ini", value: revenue.totalRevenue, helper: `${revenue.paidCount} invoice lunas` },
+    { label: "Pengeluaran bulan ini", value: expenses, helper: "Biaya operasional" },
+    { label: "Laba bersih", value: revenue.totalRevenue - expenses, helper: "Pendapatan dikurangi biaya" },
+    { label: "Invoice pending", value: revenue.pendingCount, helper: "Menunggu pembayaran" },
   ]
 
   return (
     <div className="space-y-6">
+      <DashboardPageHeader
+        eyebrow="Owner"
+        status="Bulan berjalan"
+        title="Kesehatan Finansial"
+        description="Ringkas pendapatan, biaya, laba bersih, dan invoice yang masih perlu follow-up."
+      />
       <div className="grid gap-4 md:grid-cols-4">
         {items.map((item) => <MetricCard key={item.label} {...item} />)}
       </div>

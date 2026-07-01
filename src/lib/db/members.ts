@@ -10,7 +10,7 @@ export async function getMembers(options?: { limit?: number; offset?: number; st
   const supabase = await createAdminSupabaseClient()
   let query = supabase
     .from("members")
-    .select("*, users(name, email, phone), membership_plans(name)")
+    .select("id, status, member_type, created_at, users(name, email, phone), subscriptions(status, end_date, membership_plans(name))")
     .order("created_at", { ascending: false })
 
   if (options?.status) query = query.eq("status", options.status)
@@ -19,6 +19,32 @@ export async function getMembers(options?: { limit?: number; offset?: number; st
 
   const { data } = await query
   return data || []
+}
+
+type MemberSubscriptionSummary = {
+  status?: string | null
+  end_date?: string | null
+  membership_plans?: { name?: string | null } | Array<{ name?: string | null }> | null
+}
+
+function getPlanName(subscription?: MemberSubscriptionSummary | null) {
+  const plan = Array.isArray(subscription?.membership_plans)
+    ? subscription?.membership_plans[0]
+    : subscription?.membership_plans
+  return plan?.name || ""
+}
+
+export function getMemberSubscriptionSummary(member: Record<string, unknown>) {
+  const subscriptions = Array.isArray(member.subscriptions)
+    ? member.subscriptions as MemberSubscriptionSummary[]
+    : []
+  const activeSubscription = subscriptions.find((subscription) => subscription.status === "ACTIVE")
+  const latestSubscription = activeSubscription || subscriptions[0]
+
+  return {
+    plan: getPlanName(latestSubscription) || (member.member_type as string | undefined) || "N/A",
+    endDate: latestSubscription?.end_date || (member.created_at as string),
+  }
 }
 
 export async function getMemberCount() {

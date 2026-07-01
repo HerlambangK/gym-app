@@ -20,6 +20,7 @@ import { getActiveSubscription } from "@/lib/db/subscriptions";
 import { getActiveSession, createCheckIn, createCheckOut } from "@/lib/db/attendances";
 import { getDefaultBranch } from "@/lib/db/branches";
 import { canAccessRole, hasPermission } from "@/lib/rbac";
+import type { PermissionCode } from "@/types/domain";
 
 function jsonRequest(body: unknown): Request {
   return new Request("http://localhost:3000/api/member/check-in", {
@@ -87,7 +88,7 @@ describe("Member Scenario", () => {
     setupMocks({ outsideRadius: true });
     const res = await checkInPost(jsonRequest(baseLocation));
     const body = await res.json();
-    expect(body.error).toBe("Outside branch radius");
+    expect(body.error).toBe("Di luar radius cabang");
     expect(res.status).toBe(403);
   });
 
@@ -96,7 +97,7 @@ describe("Member Scenario", () => {
     const res = await checkInPost(jsonRequest(baseLocation));
     expect(res.status).toBe(403);
     const body = await res.json();
-    expect(body.error).toBe("No active subscription");
+    expect(body.error).toBe("Tidak ada langganan aktif");
   });
 
   it("Skenario 4: Check-in ditolak - sudah check-in", async () => {
@@ -104,7 +105,7 @@ describe("Member Scenario", () => {
     const res = await checkInPost(jsonRequest(baseLocation));
     expect(res.status).toBe(409);
     const body = await res.json();
-    expect(body.error).toBe("Already checked in");
+    expect(body.error).toBe("Sudah check-in");
   });
 
   it("Skenario 5: Check-in ditolak - tanpa auth", async () => {
@@ -151,8 +152,8 @@ describe("Member Scenario", () => {
     const perms = [
       "view_member_portal", "member_check_in", "member_check_out",
       "use_premium_blog", "use_nutrition_log", "use_workout_progress",
-    ] as const;
-    expect(hasPermission(perms as any, "member_check_in")).toBe(true);
-    expect(hasPermission(perms as any, "manage_users")).toBe(false);
+    ] satisfies PermissionCode[];
+    expect(hasPermission(perms, "member_check_in")).toBe(true);
+    expect(hasPermission(perms, "manage_users")).toBe(false);
   });
 });

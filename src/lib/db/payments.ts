@@ -5,6 +5,7 @@ export async function createPayment(input: {
   provider: string
   providerOrderId: string
   amount: number
+  method?: string
 }) {
   const supabase = await createAdminSupabaseClient()
   const { data, error } = await supabase
@@ -13,6 +14,7 @@ export async function createPayment(input: {
       invoice_id: input.invoiceId,
       provider: input.provider,
       provider_order_id: input.providerOrderId,
+      method: input.method,
       amount: input.amount,
       status: "PENDING",
     })

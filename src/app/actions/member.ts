@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { getMemberByUserId } from "@/lib/db/members"
-import { createNutritionLog, upsertNutritionTarget } from "@/lib/db/nutrition"
-import { replaceActiveWorkoutProgram } from "@/lib/db/workouts"
+import { createNutritionLog, deleteNutritionLog, upsertNutritionTarget } from "@/lib/db/nutrition"
+import { deleteActiveWorkoutProgram, replaceActiveWorkoutProgram } from "@/lib/db/workouts"
 import { upsertUserProfile } from "@/lib/db/users"
 import { requireUser } from "@/lib/server/guards"
 
@@ -74,6 +74,19 @@ export async function saveNutritionEntry(_prevState: ActionState, formData: Form
   return { ok: true, message: "Log nutrisi dan target berhasil disimpan." }
 }
 
+export async function deleteNutritionEntry(formData: FormData) {
+  const user = await requireUser()
+  const member = await getMemberByUserId(user.id)
+  if (!member) return
+
+  const logId = String(formData.get("logId") || "")
+  if (!logId) return
+
+  await deleteNutritionLog(member.id, logId)
+  revalidatePath("/member/nutrition")
+  revalidatePath("/member/dashboard")
+}
+
 const workoutSchema = z.object({
   title: z.string().min(3),
   goal: z.string().optional(),
@@ -125,6 +138,16 @@ export async function saveWorkoutProgram(_prevState: ActionState, formData: Form
 
   revalidatePath("/member/workouts")
   return { ok: true, message: "Program latihan berhasil disimpan." }
+}
+
+export async function deleteWorkoutProgram() {
+  const user = await requireUser()
+  const member = await getMemberByUserId(user.id)
+  if (!member) return
+
+  await deleteActiveWorkoutProgram(member.id)
+  revalidatePath("/member/workouts")
+  revalidatePath("/member/dashboard")
 }
 
 const profileSchema = z.object({

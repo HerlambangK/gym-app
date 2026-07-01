@@ -2,6 +2,7 @@ import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getUserRole } from "@/lib/db/users"
 import { getAllInvoices } from "@/lib/db/invoices"
 import { InvoiceTable } from "@/components/dashboard/data-table"
+import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { redirect } from "next/navigation"
 
 export default async function Page() {
@@ -22,5 +23,15 @@ export default async function Page() {
     method: "Midtrans",
   }))
 
-  return <InvoiceTable invoices={mapped} />
+  return (
+    <div className="space-y-6">
+      <DashboardPageHeader
+        eyebrow="Admin"
+        status={`${mapped.length} invoice terbaru`}
+        title="Invoice Member"
+        description="Cek tagihan member, nominal pembayaran, dan status transaksi Midtrans dari satu halaman."
+      />
+      <InvoiceTable invoices={mapped} />
+    </div>
+  )
 }

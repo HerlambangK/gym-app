@@ -14,6 +14,7 @@ export default async function Page() {
         description="Bantu validasi check-in member dengan lokasi cabang yang sama seperti portal member."
       />
       <CheckInPanel
+        context="admin"
         branch={branch ? {
           name: branch.name,
           address: branch.address,

@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getMemberByUserId } from "@/lib/db/members"
 import { getUserPermissions, getUserRole } from "@/lib/db/users"
 
 export async function GET() {
@@ -11,6 +12,7 @@ export async function GET() {
 
   const role = await getUserRole(user.id)
   const permissions = await getUserPermissions(user.id)
+  const member = role === "MEMBER" ? await getMemberByUserId(user.id) : null
 
   return Response.json({
     user: {
@@ -19,6 +21,8 @@ export async function GET() {
       name: user.user_metadata?.name || user.email,
       phone: user.user_metadata?.phone || null,
       role,
+      memberType: member?.member_type || null,
+      memberStatus: member?.status || null,
       permissions,
     },
   })

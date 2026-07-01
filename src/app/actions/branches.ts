@@ -12,7 +12,7 @@ export type BranchLocationState = {
 }
 
 const branchLocationSchema = z.object({
-  id: z.string().uuid().optional().or(z.literal("")),
+  id: z.string().optional(),
   name: z.string().min(2, "Nama cabang minimal 2 karakter"),
   address: z.string().min(8, "Alamat cabang terlalu pendek"),
   latitude: z.coerce.number().min(-90).max(90),

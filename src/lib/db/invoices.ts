@@ -32,7 +32,7 @@ export async function getMemberInvoices(memberId: string) {
   const supabase = await createAdminSupabaseClient()
   const { data } = await supabase
     .from("invoices")
-    .select("*, membership_plans(name, code)")
+    .select("*, membership_plans(name, code, duration_days), payments(status, method, raw_callback)")
     .eq("member_id", memberId)
     .order("created_at", { ascending: false })
   return data || []
@@ -42,7 +42,7 @@ export async function getAllInvoices(options?: { limit?: number; offset?: number
   const supabase = await createAdminSupabaseClient()
   let query = supabase
     .from("invoices")
-    .select("*, members(users(name)), membership_plans(name)")
+    .select("id, invoice_number, amount, status, created_at, members(users(name)), membership_plans(name)")
     .order("created_at", { ascending: false })
 
   if (options?.status) query = query.eq("status", options.status)
@@ -61,14 +61,18 @@ export async function updateInvoiceStatus(id: string, status: string) {
 
 export async function getInvoiceStats() {
   const supabase = await createAdminSupabaseClient()
-  const { data: paidInvoices } = await supabase
+  const startOfMonth = new Date()
+  startOfMonth.setDate(1)
+  startOfMonth.setHours(0, 0, 0, 0)
+
+  const { data } = await supabase
     .from("invoices")
-    .select("amount")
-    .eq("status", "PAID")
-  const { data: pendingInvoices } = await supabase
-    .from("invoices")
-    .select("id")
-    .eq("status", "PENDING")
+    .select("amount, status")
+    .in("status", ["PAID", "PENDING"])
+    .gte("created_at", startOfMonth.toISOString())
+
+  const paidInvoices = data?.filter((invoice) => invoice.status === "PAID") || []
+  const pendingInvoices = data?.filter((invoice) => invoice.status === "PENDING") || []
 
   const totalRevenue = paidInvoices?.reduce((sum, inv) => sum + Number(inv.amount), 0) || 0
   return {

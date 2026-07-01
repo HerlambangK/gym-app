@@ -1,7 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getUserRole } from "@/lib/db/users"
 import { getAllInvoices } from "@/lib/db/invoices"
-import { getMembers } from "@/lib/db/members"
+import { getMemberSubscriptionSummary, getMembers } from "@/lib/db/members"
 import { InvoiceTable, MemberTable } from "@/components/dashboard/data-table"
 import { MetricCard } from "@/components/dashboard/metric-card"
 import { DashboardPageHeader } from "@/components/dashboard/page-header"
@@ -34,12 +34,15 @@ export default async function Page() {
     method: "Midtrans",
   }))
 
-  const mappedMembers = membersData.map((m: Record<string, unknown>) => ({
-    name: (m as { users: { name: string } }).users?.name || "Unknown",
-    plan: (m as { membership_plans: { name: string } }).membership_plans?.name || "N/A",
-    status: m.status as string,
-    endDate: m.created_at as string,
-  }))
+  const mappedMembers = membersData.map((m: Record<string, unknown>) => {
+    const subscription = getMemberSubscriptionSummary(m)
+    return {
+      name: (m as { users: { name: string } }).users?.name || "Unknown",
+      plan: subscription.plan,
+      status: m.status as string,
+      endDate: subscription.endDate,
+    }
+  })
 
   return (
     <div className="space-y-6">

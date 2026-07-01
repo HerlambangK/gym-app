@@ -18,17 +18,17 @@ export async function POST(request: Request) {
   }
 
   const member = await getMemberByUserId(user.id)
-  if (!member) return Response.json({ error: "Member not found" }, { status: 404 })
-  if (member.status !== "ACTIVE") return Response.json({ error: "Member is not active" }, { status: 403 })
+  if (!member) return Response.json({ error: "Member not found", code: "MEMBER_NOT_FOUND" }, { status: 404 })
+  if (member.status !== "ACTIVE") return Response.json({ error: "Akun member tidak aktif", code: "MEMBER_INACTIVE" }, { status: 403 })
 
   const subscription = await getActiveSubscription(member.id)
-  if (!subscription) return Response.json({ error: "No active subscription" }, { status: 403 })
+  if (!subscription) return Response.json({ error: "Tidak ada langganan aktif", code: "NO_ACTIVE_SUBSCRIPTION" }, { status: 403 })
 
   const activeSession = await getActiveSession(member.id)
-  if (activeSession) return Response.json({ error: "Already checked in" }, { status: 409 })
+  if (activeSession) return Response.json({ error: "Sudah check-in", code: "ALREADY_CHECKED_IN" }, { status: 409 })
 
   const branch = await getDefaultBranch()
-  if (!branch) return Response.json({ error: "No branch configured" }, { status: 500 })
+  if (!branch) return Response.json({ error: "Belum ada cabang dikonfigurasi", code: "NO_BRANCH" }, { status: 500 })
 
   const distance = getDistanceMeters(parsed.data, {
     latitude: Number(branch.latitude),
@@ -37,9 +37,10 @@ export async function POST(request: Request) {
 
   if (distance > branch.radius_meters) {
     return Response.json({
-      error: "Outside branch radius",
+      error: "Di luar radius cabang",
       distance: Math.round(distance),
       radius: branch.radius_meters,
+      code: "OUTSIDE_RADIUS",
     }, { status: 403 })
   }
 

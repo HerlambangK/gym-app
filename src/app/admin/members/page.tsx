@@ -1,7 +1,8 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getUserRole } from "@/lib/db/users"
-import { getMembers } from "@/lib/db/members"
+import { getMemberSubscriptionSummary, getMembers } from "@/lib/db/members"
 import { MemberTable } from "@/components/dashboard/data-table"
+import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { redirect } from "next/navigation"
 
 export default async function Page() {
@@ -13,12 +14,25 @@ export default async function Page() {
   if (!role || role === "MEMBER") redirect("/member/dashboard")
 
   const members = await getMembers({ limit: 50 })
-  const mapped = members.map((m: Record<string, unknown>) => ({
-    name: (m as { users: { name: string } }).users?.name || "Unknown",
-    plan: (m as { membership_plans: { name: string } }).membership_plans?.name || "N/A",
-    status: m.status as string,
-    endDate: m.created_at as string,
-  }))
+  const mapped = members.map((m: Record<string, unknown>) => {
+    const subscription = getMemberSubscriptionSummary(m)
+    return {
+      name: (m as { users: { name: string } }).users?.name || "Unknown",
+      plan: subscription.plan,
+      status: m.status as string,
+      endDate: subscription.endDate,
+    }
+  })
 
-  return <MemberTable members={mapped} />
+  return (
+    <div className="space-y-6">
+      <DashboardPageHeader
+        eyebrow="Admin"
+        status={`${mapped.length} data terbaru`}
+        title="Manajemen Member"
+        description="Pantau status member, paket aktif, dan data operasional yang dibutuhkan front desk."
+      />
+      <MemberTable members={mapped} />
+    </div>
+  )
 }
