@@ -53,3 +53,4 @@ commit;
 - `nutrition_logs` satu-satunya FK ke `members` tanpa `ON DELETE CASCADE` — hapus manual sebelum `members`.
 - Gunakan `BEGIN/COMMIT` agar atomic.
 - Data master (`users`, `membership_plans`, `branches`, `features`) tidak terhapus.
+
