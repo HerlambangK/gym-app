@@ -39,23 +39,22 @@ where
   (r.code = 'SUPER_ADMIN')
   or (r.code = 'OWNER')
   or (r.code = 'MANAGER' and p.code in (
-    'manage_members', 'view_members', 'manage_invoices', 'manage_payments',
-    'manage_attendance', 'manual_check_in', 'view_reports', 'manage_expenses',
-    'view_financial', 'member_check_in', 'member_check_out'
+    'manage_branches', 'manage_members', 'view_members', 'manage_memberships',
+    'manage_invoices', 'manage_payments', 'view_financial', 'manage_expenses',
+    'view_reports', 'manage_attendance', 'manual_check_in'
   ))
   or (r.code = 'ADMIN' and p.code in (
-    'manage_members', 'view_members', 'manage_invoices', 'manage_payments',
-    'manage_attendance', 'manual_check_in', 'member_check_in', 'member_check_out'
+    'manage_members', 'view_members', 'manage_memberships',
+    'manage_invoices', 'manage_payments', 'view_reports',
+    'manage_attendance', 'manual_check_in'
   ))
-  or (r.code = 'MARKETING' and p.code in ('manage_blog', 'manage_branding'))
+  or (r.code = 'MARKETING' and p.code in ('manage_branding', 'manage_blog'))
   or (r.code = 'TRAINER' and p.code in (
-    'view_members', 'manage_attendance', 'member_check_in', 'member_check_out',
-    'use_workout_progress'
+    'view_members', 'manage_attendance'
   ))
   or (r.code = 'MEMBER' and p.code in (
     'view_member_portal', 'member_check_in', 'member_check_out',
-    'use_premium_blog', 'use_nutrition_log', 'use_workout_progress',
-    'billing_history'
+    'use_premium_blog', 'use_nutrition_log', 'use_workout_progress'
   ))
 on conflict do nothing;
 

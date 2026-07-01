@@ -39,6 +39,17 @@ describe("Badge Component", () => {
     expect(cls).toContain("amber");
   });
 
+  it("variant='destructive' memiliki class text-red", () => {
+    render(<Badge variant="destructive">Expired</Badge>);
+    const cls = screen.getByText("Expired").className;
+    expect(cls).toContain("red");
+  });
+
+  it("variant='muted' memiliki class text-muted-foreground", () => {
+    render(<Badge variant="muted">Muted</Badge>);
+    expect(screen.getByText("Muted")).toHaveClass("text-muted-foreground");
+  });
+
   it("menggabungkan className custom", () => {
     render(<Badge className="my-badge">Custom</Badge>);
     expect(screen.getByText("Custom")).toHaveClass("my-badge");

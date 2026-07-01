@@ -5,6 +5,8 @@
 import { getAdminClient, testEmail } from "./helpers"
 import { TEST_PREFIX } from "./helpers"
 
+jest.setTimeout(30000)
+
 describe("Database: users & roles", () => {
   const supabase = getAdminClient()
 
@@ -42,7 +44,7 @@ describe("Database: users & roles", () => {
 
     expect(error).toBeNull()
     expect(ownerPerms!.length).toBeGreaterThanOrEqual(10)
-  })
+  }, 30000)
 
   it("4. CRUD: insert user test, assign role, verifikasi, cleanup", async () => {
     const userEmail = testEmail("user_crud")
@@ -79,5 +81,5 @@ describe("Database: users & roles", () => {
     // Cleanup
     await supabase.from("user_roles").delete().eq("user_id", user!.id)
     await supabase.from("users").delete().eq("id", user!.id)
-  })
+  }, 30000)
 })
