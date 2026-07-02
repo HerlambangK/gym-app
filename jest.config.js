@@ -2,6 +2,7 @@
 const config = {
   preset: "ts-jest",
   testEnvironment: "jsdom",
+  setupFiles: ["./jest.setup.env.ts"],
   setupFilesAfterEnv: ["./jest.setup.ts"],
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
