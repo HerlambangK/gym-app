@@ -103,82 +103,48 @@ export default async function Page() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-sm text-muted-foreground">Status Sesi</CardTitle>
-              <span className="flex size-9 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-700 dark:text-emerald-200">
-                <Timer size={17} />
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tracking-tight">{activeSession ? "Sedang aktif" : "Belum check-in"}</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {activeSession
-                ? `Mulai ${new Date(activeSession.check_in_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}. Selesaikan latihan dari halaman sesi.`
-                : "Mulai sesi saat tiba di area gym."}
-            </p>
-            {activeSession ? (
-              <Link href="/member/check-in" className="mt-4 block">
-                <Button size="sm" variant="outline" className="w-full justify-between">
-                  Sesi Latihan
-                  <ArrowRight size={14} />
-                </Button>
-              </Link>
-            ) : null}
-          </CardContent>
-        </Card>
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-sm text-muted-foreground">Masa Aktif</CardTitle>
-              <span className="flex size-9 items-center justify-center rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-200">
-                <CalendarCheck2 size={17} />
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tracking-tight">{membershipTiming?.shortLabel || "-"}</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {subscription ? `${planName} sampai ${formatDate(subscription.end_date)}.` : "Aktifkan paket untuk mulai memakai akses gym."}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-sm text-muted-foreground">Latihan Terakhir</CardTitle>
-              <span className="flex size-9 items-center justify-center rounded-md bg-sky-500/10 text-sky-700 dark:text-sky-200">
-                <Dumbbell size={17} />
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-semibold tracking-tight">{completedSessions} sesi</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {totalMinutes > 0 ? `${totalMinutes} menit dari catatan terbaru.` : "Riwayat latihan akan muncul setelah check-out."}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-sm text-muted-foreground">Cabang</CardTitle>
-              <span className="flex size-9 items-center justify-center rounded-md bg-zinc-500/10 text-zinc-700 dark:text-zinc-200">
-                <MapPin size={17} />
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-2xl font-semibold tracking-tight">{branch?.name || "-"}</p>
-            <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
-              {branch ? `${branch.address}. Radius check-in ${branch.radius_meters}m.` : "Lokasi gym belum diatur."}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader className="p-4 sm:p-6">
+          <CardTitle>Ringkasan Member</CardTitle>
+          <CardDescription>Semua status utama dimuat ringkas dalam satu card agar mobile tidak terlalu panjang.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-2 p-4 pt-0 sm:grid-cols-2 sm:p-6 sm:pt-0 xl:grid-cols-4">
+          <CompactInfo
+            icon={Timer}
+            label="Status Sesi"
+            value={activeSession ? "Sedang aktif" : "Belum check-in"}
+            helper={activeSession ? `Mulai ${new Date(activeSession.check_in_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}` : "Mulai di area gym"}
+          />
+          <CompactInfo
+            icon={CalendarCheck2}
+            label="Masa Aktif"
+            value={membershipTiming?.shortLabel || "-"}
+            helper={subscription ? `${planName} sampai ${formatDate(subscription.end_date)}` : "Belum ada paket"}
+          />
+          <CompactInfo
+            icon={Dumbbell}
+            label="Latihan"
+            value={`${completedSessions} sesi`}
+            helper={totalMinutes > 0 ? `${totalMinutes} menit tercatat` : "Menunggu check-out"}
+          />
+          <CompactInfo
+            icon={MapPin}
+            label="Cabang"
+            value={branch?.name || "-"}
+            helper={branch ? `Radius ${branch.radius_meters}m` : "Lokasi belum diatur"}
+          />
+        </CardContent>
+        {activeSession ? (
+          <div className="border-t border-border p-4 pt-3 sm:px-6">
+            <Link href="/member/check-in">
+              <Button size="sm" variant="outline" className="w-full justify-between sm:w-auto">
+                Sesi Latihan
+                <ArrowRight size={14} />
+              </Button>
+            </Link>
+          </div>
+        ) : null}
+      </Card>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
         <Card className="min-w-0">
@@ -391,6 +357,33 @@ function MiniWorkoutStat({ label, value }: { label: string; value: string }) {
     <div className="rounded-lg border border-border p-3 text-center">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
+    </div>
+  )
+}
+
+function CompactInfo({
+  icon: Icon,
+  label,
+  value,
+  helper,
+}: {
+  icon: typeof Timer
+  label: string
+  value: string
+  helper: string
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border border-border bg-muted/20 p-3">
+      <div className="flex items-start gap-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-background text-primary">
+          <Icon size={15} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="mt-1 truncate text-base font-semibold">{value}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{helper}</p>
+        </div>
+      </div>
     </div>
   )
 }

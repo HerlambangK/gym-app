@@ -1,6 +1,6 @@
 "use client"
 
-import { useActionState, useCallback, useState, type ReactNode } from "react"
+import { useActionState, useCallback, useState } from "react"
 import { Building2, LocateFixed, MapPin, Navigation, Save, Search } from "lucide-react"
 import { saveBranchLocation, type BranchLocationState } from "@/app/actions/branches"
 import { BranchMapPicker } from "@/components/location/branch-map-picker"
@@ -200,22 +200,24 @@ export function BranchLocationForm({ branch }: { branch: BranchLocation | null }
           />
         </section>
 
-        <div className="grid gap-3 sm:grid-cols-3">
-          <InfoTile
-            icon={<MapPin size={18} />}
-            label="Titik pin"
-            value={`${location.latitude}, ${location.longitude}`}
-          />
-          <InfoTile
-            icon={<Navigation size={18} />}
-            label="Radius check-in"
-            value={`${radiusMeters} meter`}
-          />
-          <InfoTile
-            icon={<Building2 size={18} />}
-            label="Status"
-            value={branch ? "Siap dipakai member" : "Menunggu simpan"}
-          />
+        <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
+          <div className="grid gap-2 min-[420px]:grid-cols-2 lg:grid-cols-3">
+            <InfoTile
+              icon={MapPin}
+              label="Titik pin"
+              value={`${location.latitude}, ${location.longitude}`}
+            />
+            <InfoTile
+              icon={Navigation}
+              label="Radius check-in"
+              value={`${radiusMeters} meter`}
+            />
+            <InfoTile
+              icon={Building2}
+              label="Akses member"
+              value={branch ? "Tetap tampil" : "Menunggu simpan"}
+            />
+          </div>
         </div>
       </div>
 
@@ -343,12 +345,16 @@ export function BranchLocationForm({ branch }: { branch: BranchLocation | null }
   )
 }
 
-function InfoTile({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
+function InfoTile({ icon: Icon, label, value }: { icon: typeof MapPin; label: string; value: string }) {
   return (
-    <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="text-primary">{icon}</div>
-      <p className="mt-2 text-sm text-muted-foreground">{label}</p>
-      <p className="mt-1 truncate text-sm font-semibold">{value}</p>
+    <div className="min-w-0 rounded-lg border border-border bg-muted/20 p-3">
+      <div className="flex items-start gap-2">
+        <span className="mt-0.5 text-primary"><Icon size={16} /></span>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="mt-0.5 truncate text-sm font-semibold">{value}</p>
+        </div>
+      </div>
     </div>
   )
 }

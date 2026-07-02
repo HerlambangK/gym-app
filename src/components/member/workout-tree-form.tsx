@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react"
+import Model, { type IExerciseData, type IMuscleStats, type Muscle } from "react-body-highlighter"
 import {
   ArrowRight,
   CalendarDays,
@@ -66,12 +67,22 @@ type WorkoutProfile = {
 }
 
 type ExerciseTemplate = {
+  id: string
   name: string
   type: string
   muscle: string
+  muscleGroupId: string
   focus: string
+  primary: string
+  support: string
+  primaryMuscles: string[]
+  secondaryMuscles: string[]
+  highlightedMuscles: Muscle[]
   equipment: string
   reps: string
+  defaultSets: string
+  defaultRpe: string
+  note: string
   side: "front" | "back" | "both"
 }
 
@@ -83,58 +94,261 @@ const tabs = [
   { id: "daily", label: "Daily Workout", icon: CalendarDays },
 ] as const
 
+const muscleGroups = [
+  { id: "chest", label: "Chest", side: "front" },
+  { id: "shoulders", label: "Shoulders", side: "front" },
+  { id: "biceps", label: "Biceps", side: "front" },
+  { id: "core", label: "Core", side: "front" },
+  { id: "quads", label: "Quads", side: "front" },
+  { id: "back", label: "Back", side: "back" },
+  { id: "rear_shoulders", label: "Rear Shoulders", side: "back" },
+  { id: "triceps", label: "Triceps", side: "back" },
+  { id: "lower_back", label: "Lower Back", side: "back" },
+  { id: "glutes", label: "Glutes", side: "back" },
+  { id: "hamstrings", label: "Hamstrings", side: "back" },
+  { id: "calves", label: "Calves", side: "both" },
+  { id: "cardio", label: "Cardio", side: "front" },
+  { id: "full_body", label: "Full Body", side: "both" },
+] as const
+
+type MuscleGroupId = (typeof muscleGroups)[number]["id"]
+
 const exerciseLibrary: ExerciseTemplate[] = [
-  { name: "Bench Press", type: "Strength", muscle: "Chest", focus: "Push", equipment: "Barbell", reps: "8-10", side: "front" },
-  { name: "Incline Dumbbell Press", type: "Hypertrophy", muscle: "Chest", focus: "Upper chest", equipment: "Dumbbell", reps: "8-12", side: "front" },
-  { name: "Cable Fly", type: "Hypertrophy", muscle: "Chest", focus: "Chest isolation", equipment: "Cable", reps: "12-15", side: "front" },
-  { name: "Push Up", type: "Strength", muscle: "Chest", focus: "Push", equipment: "Bodyweight", reps: "AMRAP", side: "front" },
-  { name: "Lat Pulldown", type: "Strength", muscle: "Back", focus: "Vertical pull", equipment: "Cable", reps: "10-12", side: "back" },
-  { name: "Seated Row", type: "Strength", muscle: "Back", focus: "Horizontal pull", equipment: "Cable", reps: "10-12", side: "back" },
-  { name: "Pull Up", type: "Strength", muscle: "Back", focus: "Vertical pull", equipment: "Bodyweight", reps: "6-10", side: "back" },
-  { name: "Romanian Deadlift", type: "Strength", muscle: "Back", focus: "Posterior chain", equipment: "Barbell", reps: "8-10", side: "back" },
-  { name: "Shoulder Press", type: "Strength", muscle: "Shoulders", focus: "Overhead press", equipment: "Dumbbell", reps: "8-10", side: "front" },
-  { name: "Lateral Raise", type: "Hypertrophy", muscle: "Shoulders", focus: "Side delt", equipment: "Dumbbell", reps: "12-15", side: "front" },
-  { name: "Face Pull", type: "Mobility", muscle: "Shoulders", focus: "Rear delt", equipment: "Cable", reps: "12-15", side: "back" },
-  { name: "Rear Delt Fly", type: "Hypertrophy", muscle: "Shoulders", focus: "Rear delt", equipment: "Machine", reps: "12-15", side: "back" },
-  { name: "Barbell Curl", type: "Hypertrophy", muscle: "Biceps", focus: "Elbow flexion", equipment: "Barbell", reps: "10-12", side: "front" },
-  { name: "Hammer Curl", type: "Hypertrophy", muscle: "Biceps", focus: "Brachialis", equipment: "Dumbbell", reps: "10-12", side: "front" },
-  { name: "Triceps Pushdown", type: "Hypertrophy", muscle: "Triceps", focus: "Elbow extension", equipment: "Cable", reps: "10-15", side: "back" },
-  { name: "Overhead Triceps Extension", type: "Hypertrophy", muscle: "Triceps", focus: "Long head", equipment: "Cable", reps: "10-12", side: "back" },
-  { name: "Squat", type: "Strength", muscle: "Quads", focus: "Knee dominant", equipment: "Barbell", reps: "8-12", side: "front" },
-  { name: "Leg Press", type: "Strength", muscle: "Quads", focus: "Knee dominant", equipment: "Machine", reps: "10-12", side: "front" },
-  { name: "Leg Extension", type: "Hypertrophy", muscle: "Quads", focus: "Quad isolation", equipment: "Machine", reps: "12-15", side: "front" },
-  { name: "Walking Lunge", type: "Strength", muscle: "Quads", focus: "Single leg", equipment: "Dumbbell", reps: "10/side", side: "front" },
-  { name: "Leg Curl", type: "Hypertrophy", muscle: "Hamstrings", focus: "Knee flexion", equipment: "Machine", reps: "12-15", side: "back" },
-  { name: "Hip Thrust", type: "Strength", muscle: "Glutes", focus: "Hip extension", equipment: "Barbell", reps: "8-12", side: "back" },
-  { name: "Cable Kickback", type: "Hypertrophy", muscle: "Glutes", focus: "Glute isolation", equipment: "Cable", reps: "12-15", side: "back" },
-  { name: "Standing Calf Raise", type: "Hypertrophy", muscle: "Calves", focus: "Calves", equipment: "Machine", reps: "12-20", side: "back" },
-  { name: "Plank", type: "Core", muscle: "Core", focus: "Stability", equipment: "Bodyweight", reps: "30-60 detik", side: "front" },
-  { name: "Cable Crunch", type: "Core", muscle: "Core", focus: "Flexion", equipment: "Cable", reps: "12-15", side: "front" },
-  { name: "Hanging Leg Raise", type: "Core", muscle: "Core", focus: "Lower abs", equipment: "Bodyweight", reps: "8-12", side: "front" },
-  { name: "Pallof Press", type: "Core", muscle: "Core", focus: "Anti rotation", equipment: "Cable", reps: "10/side", side: "front" },
-  { name: "Treadmill Intervals", type: "Cardio", muscle: "Cardio", focus: "Conditioning", equipment: "Treadmill", reps: "12-18 menit", side: "both" },
-  { name: "Rowing Machine", type: "Cardio", muscle: "Cardio", focus: "Conditioning", equipment: "Rower", reps: "10-15 menit", side: "both" },
-  { name: "Battle Rope", type: "Conditioning", muscle: "Full Body", focus: "Power endurance", equipment: "Rope", reps: "8 rounds", side: "both" },
-  { name: "Kettlebell Swing", type: "Conditioning", muscle: "Full Body", focus: "Hip power", equipment: "Kettlebell", reps: "12-15", side: "both" },
+  ex("bench_press", "Bench Press", "chest", "Strength", "Barbell", ["Chest"], ["Triceps", "Front Shoulder"], "3-4", "8-12", "7-8", ["chest", "triceps", "front-deltoids"], "Kunci scapula, turunkan bar terkontrol ke dada tengah."),
+  ex("incline_dumbbell_press", "Incline Dumbbell Press", "chest", "Strength", "Dumbbell", ["Upper Chest"], ["Triceps", "Shoulder"], "3-4", "8-12", "7-8", ["chest", "triceps", "front-deltoids"], "Gunakan incline sedang dan jaga dumbbell stabil di atas dada."),
+  ex("chest_fly", "Chest Fly", "chest", "Isolation", "Machine/Dumbbell", ["Chest"], ["Shoulder"], "3", "12-15", "7", ["chest", "front-deltoids"], "Buka lengan secukupnya tanpa memaksa bahu."),
+  ex("push_up", "Push Up", "chest", "Bodyweight", "Bodyweight", ["Chest"], ["Triceps", "Core"], "3", "10-20", "7", ["chest", "triceps", "abs"], "Jaga badan lurus dari bahu sampai tumit."),
+  ex("cable_crossover", "Cable Crossover", "chest", "Isolation", "Cable", ["Chest"], ["Shoulder"], "3", "12-15", "7", ["chest", "front-deltoids"], "Arahkan siku sedikit menekuk dan fokus kontraksi dada."),
+  ex("shoulder_press", "Shoulder Press", "shoulders", "Strength", "Dumbbell/Barbell", ["Shoulders"], ["Triceps"], "3-4", "8-12", "7-8", ["front-deltoids", "triceps"], "Tekan lurus ke atas tanpa melengkungkan pinggang berlebihan."),
+  ex("lateral_raise", "Lateral Raise", "shoulders", "Isolation", "Dumbbell", ["Side Delts"], ["Traps"], "3", "12-15", "7", ["front-deltoids", "trapezius"], "Angkat sampai setinggi bahu dan jangan mengayun."),
+  ex("front_raise", "Front Raise", "shoulders", "Isolation", "Dumbbell", ["Front Delts"], ["Chest"], "3", "12-15", "7", ["front-deltoids", "chest"], "Naikkan beban terkontrol sampai sejajar bahu."),
+  ex("arnold_press", "Arnold Press", "shoulders", "Strength", "Dumbbell", ["Shoulders"], ["Triceps"], "3", "8-12", "7-8", ["front-deltoids", "triceps"], "Putar dumbbell halus, jangan memaksa bahu."),
+  ex("upright_row", "Upright Row", "shoulders", "Strength", "Barbell/Cable", ["Shoulders"], ["Traps", "Biceps"], "3", "10-12", "7", ["front-deltoids", "trapezius", "biceps"], "Tarik sampai dada atas dengan siku tetap nyaman."),
+  ex("barbell_curl", "Barbell Curl", "biceps", "Isolation", "Barbell", ["Biceps"], ["Forearm"], "3", "8-12", "7-8", ["biceps", "forearm"], "Jaga siku dekat badan dan hindari ayunan pinggang."),
+  ex("dumbbell_curl", "Dumbbell Curl", "biceps", "Isolation", "Dumbbell", ["Biceps"], ["Forearm"], "3", "10-12", "7", ["biceps", "forearm"], "Putar telapak ke atas saat naik untuk kontraksi penuh."),
+  ex("hammer_curl", "Hammer Curl", "biceps", "Isolation", "Dumbbell", ["Biceps", "Brachialis"], ["Forearm"], "3", "10-12", "7", ["biceps", "forearm"], "Pegang netral dan kontrol fase turun."),
+  ex("preacher_curl", "Preacher Curl", "biceps", "Isolation", "Machine/Barbell", ["Biceps"], ["Forearm"], "3", "10-12", "7", ["biceps", "forearm"], "Jangan mengunci siku di bawah."),
+  ex("cable_curl", "Cable Curl", "biceps", "Isolation", "Cable", ["Biceps"], ["Forearm"], "3", "12-15", "7", ["biceps", "forearm"], "Jaga tegangan kabel sepanjang repetisi."),
+  ex("crunch", "Crunch", "core", "Core", "Bodyweight", ["Abs"], ["Core"], "3", "15-20", "7", ["abs"], "Angkat bahu dari lantai tanpa menarik leher."),
+  ex("leg_raise", "Leg Raise", "core", "Core", "Bodyweight", ["Lower Abs"], ["Hip Flexor"], "3", "12-15", "7", ["abs"], "Tekan pinggang bawah tetap stabil."),
+  ex("plank", "Plank", "core", "Core", "Bodyweight", ["Core"], ["Shoulder", "Glutes"], "3", "30-60 detik", "7", ["abs", "obliques", "front-deltoids", "gluteal"], "Jaga napas dan posisi pinggul sejajar."),
+  ex("russian_twist", "Russian Twist", "core", "Core", "Bodyweight/Plate", ["Oblique"], ["Abs"], "3", "15/side", "7", ["obliques", "abs"], "Putar dari torso, bukan hanya tangan."),
+  ex("mountain_climber", "Mountain Climber", "core", "Cardio/Core", "Bodyweight", ["Core"], ["Shoulder", "Legs"], "3", "30-60 detik", "8", ["abs", "front-deltoids", "quadriceps"], "Pertahankan bahu di atas pergelangan tangan."),
+  ex("squat", "Squat", "quads", "Compound", "Barbell", ["Quadriceps"], ["Glutes", "Hamstrings", "Core"], "3-4", "8-12", "7-8", ["quadriceps", "gluteal", "hamstring", "abs"], "Jaga dada terbuka dan lutut mengikuti arah ujung kaki."),
+  ex("leg_press", "Leg Press", "quads", "Strength", "Machine", ["Quadriceps"], ["Glutes", "Hamstrings"], "3-4", "10-12", "7-8", ["quadriceps", "gluteal", "hamstring"], "Jaga lutut searah dengan ujung kaki, jangan mengunci lutut di atas."),
+  ex("leg_extension", "Leg Extension", "quads", "Isolation", "Machine", ["Quadriceps"], [], "3", "12-15", "7", ["quadriceps"], "Tahan sebentar di atas dan turunkan pelan."),
+  ex("front_squat", "Front Squat", "quads", "Strength", "Barbell", ["Quadriceps"], ["Core", "Glutes"], "3-4", "6-10", "7-8", ["quadriceps", "abs", "gluteal"], "Pertahankan siku tinggi agar torso tetap tegak."),
+  ex("walking_lunge", "Walking Lunge", "quads", "Strength", "Dumbbell", ["Quadriceps"], ["Glutes", "Hamstrings"], "3", "10/side", "7", ["quadriceps", "gluteal", "hamstring"], "Langkah stabil dan lutut depan tidak masuk ke dalam."),
+  ex("bulgarian_split_squat_quads", "Bulgarian Split Squat", "quads", "Strength", "Dumbbell", ["Quadriceps"], ["Glutes", "Core"], "3", "8-10/side", "8", ["quadriceps", "gluteal", "abs"], "Turun perlahan, dorong lewat kaki depan."),
+  ex("lunges", "Lunges", "quads", "Strength", "Bodyweight/Dumbbell", ["Quadriceps"], ["Glutes", "Hamstrings"], "3", "10/side", "7", ["quadriceps", "gluteal", "hamstring"], "Jaga langkah sejajar dan kontrol keseimbangan."),
+  ex("pull_up", "Pull Up", "back", "Compound", "Bodyweight", ["Back/Lats"], ["Biceps", "Rear Delts"], "3", "6-10", "8", ["upper-back", "biceps", "back-deltoids"], "Tarik dada ke arah bar dan turunkan penuh terkontrol."),
+  ex("lat_pulldown", "Lat Pulldown", "back", "Strength", "Machine", ["Lats"], ["Biceps"], "3-4", "10-12", "7-8", ["upper-back", "biceps"], "Tarik ke dada atas, jangan menarik dengan leher."),
+  ex("barbell_row", "Barbell Row", "back", "Compound", "Barbell", ["Back"], ["Biceps", "Core"], "3-4", "8-12", "7-8", ["upper-back", "lower-back", "biceps", "abs"], "Pinggul hinge stabil, tarik bar ke perut bawah."),
+  ex("seated_cable_row", "Seated Cable Row", "back", "Strength", "Cable", ["Mid Back"], ["Biceps"], "3", "10-12", "7", ["upper-back", "biceps"], "Tarik siku ke belakang dan rapatkan scapula."),
+  ex("one_arm_dumbbell_row", "One Arm Dumbbell Row", "back", "Strength", "Dumbbell", ["Lats"], ["Biceps", "Core"], "3", "10/side", "7", ["upper-back", "biceps", "abs"], "Jaga punggung rata dan tarik siku ke pinggang."),
+  ex("face_pull", "Face Pull", "rear_shoulders", "Isolation", "Cable", ["Rear Delts", "Upper Back"], ["Traps"], "3", "12-15", "7", ["back-deltoids", "upper-back", "trapezius"], "Tarik tali ke arah wajah dengan siku terbuka."),
+  ex("triceps_pushdown", "Triceps Pushdown", "triceps", "Isolation", "Cable", ["Triceps"], ["Forearm"], "3", "12-15", "7", ["triceps", "forearm"], "Kunci siku di sisi badan dan tekan sampai lurus."),
+  ex("overhead_triceps_extension", "Overhead Triceps Extension", "triceps", "Isolation", "Dumbbell/Cable", ["Triceps Long Head"], ["Shoulder"], "3", "10-12", "7", ["triceps", "front-deltoids"], "Jaga siku mengarah ke depan dan turun terkontrol."),
+  ex("close_grip_bench_press", "Close Grip Bench Press", "triceps", "Strength", "Barbell", ["Triceps"], ["Chest", "Shoulder"], "3", "8-10", "8", ["triceps", "chest", "front-deltoids"], "Gunakan grip rapat nyaman, siku tidak melebar berlebihan."),
+  ex("skull_crusher", "Skull Crusher", "triceps", "Isolation", "EZ Bar", ["Triceps"], ["Forearm"], "3", "10-12", "7", ["triceps", "forearm"], "Turunkan bar ke arah dahi dengan siku stabil."),
+  ex("dips", "Dips", "triceps", "Compound", "Bodyweight", ["Triceps"], ["Chest", "Shoulder"], "3", "8-12", "8", ["triceps", "chest", "front-deltoids"], "Turun hanya sejauh bahu tetap nyaman."),
+  ex("deadlift", "Deadlift", "lower_back", "Compound", "Barbell", ["Lower Back"], ["Hamstrings", "Glutes", "Core"], "3", "5-8", "8", ["lower-back", "hamstring", "gluteal", "abs"], "Brace core kuat dan dekatkan bar ke kaki."),
+  ex("hip_thrust", "Hip Thrust", "glutes", "Strength", "Barbell", ["Glutes"], ["Hamstrings", "Core"], "3-4", "8-12", "7-8", ["gluteal", "hamstring", "abs"], "Dorong pinggul sampai lockout tanpa melengkungkan pinggang."),
+  ex("glute_bridge", "Glute Bridge", "glutes", "Strength", "Bodyweight/Barbell", ["Glutes"], ["Hamstrings"], "3", "12-15", "7", ["gluteal", "hamstring"], "Tekan tumit ke lantai dan tahan kontraksi di atas."),
+  ex("cable_kickback", "Cable Kickback", "glutes", "Isolation", "Cable", ["Glutes"], ["Hamstrings"], "3", "12-15", "7", ["gluteal", "hamstring"], "Gerakkan dari pinggul, bukan pinggang."),
+  ex("sumo_squat", "Sumo Squat", "glutes", "Strength", "Dumbbell/Barbell", ["Glutes"], ["Quads", "Hamstrings"], "3", "10-12", "7", ["gluteal", "quadriceps", "hamstring"], "Buka kaki lebih lebar dan dorong lutut keluar."),
+  ex("step_up", "Step Up", "glutes", "Strength", "Dumbbell", ["Glutes"], ["Quads", "Core"], "3", "10/side", "7", ["gluteal", "quadriceps", "abs"], "Naik dengan kaki depan, jangan memantul dari kaki belakang."),
+  ex("romanian_deadlift", "Romanian Deadlift", "hamstrings", "Strength", "Barbell/Dumbbell", ["Hamstrings"], ["Glutes", "Lower Back"], "3-4", "8-12", "7-8", ["hamstring", "gluteal", "lower-back"], "Hinge dari pinggul dan rasakan hamstring meregang."),
+  ex("leg_curl", "Leg Curl", "hamstrings", "Isolation", "Machine", ["Hamstrings"], ["Calves"], "3", "12-15", "7", ["hamstring", "calves"], "Tahan kontraksi di bawah dan kembali pelan."),
+  ex("stiff_leg_deadlift", "Stiff Leg Deadlift", "hamstrings", "Strength", "Barbell", ["Hamstrings"], ["Glutes", "Lower Back"], "3", "8-10", "7-8", ["hamstring", "gluteal", "lower-back"], "Jaga lutut sedikit menekuk, bukan terkunci."),
+  ex("good_morning", "Good Morning", "hamstrings", "Strength", "Barbell", ["Hamstrings"], ["Lower Back", "Glutes"], "3", "8-10", "7", ["hamstring", "lower-back", "gluteal"], "Turunkan torso dengan punggung netral."),
+  ex("standing_calf_raise", "Standing Calf Raise", "calves", "Isolation", "Machine", ["Calves"], ["Soleus"], "3-4", "12-20", "7", ["calves"], "Naik penuh ke ujung kaki dan turun sampai stretch."),
+  ex("seated_calf_raise", "Seated Calf Raise", "calves", "Isolation", "Machine", ["Soleus"], ["Gastrocnemius"], "3-4", "12-20", "7", ["calves"], "Tahan di atas satu detik untuk kontraksi betis."),
+  ex("calf_press", "Calf Press", "calves", "Isolation", "Machine", ["Calves"], [], "3", "12-20", "7", ["calves"], "Gunakan rentang gerak penuh tanpa memantul."),
+  ex("jump_rope_calves", "Jump Rope", "calves", "Cardio", "Bodyweight", ["Calves"], ["Shoulder", "Core"], "3", "1-3 menit", "7", ["calves", "front-deltoids", "abs"], "Mendarat ringan dengan lutut sedikit menekuk."),
+  ex("treadmill_run", "Treadmill Run", "cardio", "Cardio", "Machine", ["Cardio"], ["Legs", "Core"], "1", "10-30 menit", "6-8", ["quadriceps", "hamstring", "calves", "abs"], "Mulai dari pace nyaman lalu naikkan bertahap."),
+  ex("cycling", "Cycling", "cardio", "Cardio", "Bike", ["Cardio & Legs"], ["Quads", "Hamstrings", "Calves"], "1", "10-30 menit", "6-8", ["quadriceps", "hamstring", "calves"], "Atur resistance agar kayuhan tetap stabil."),
+  ex("stair_climber", "Stair Climber", "cardio", "Cardio", "Machine", ["Cardio & Legs"], ["Glutes", "Quads", "Calves"], "1", "10-20 menit", "7-8", ["gluteal", "quadriceps", "calves"], "Jangan terlalu bertumpu pada pegangan."),
+  ex("rowing_machine", "Rowing Machine", "cardio", "Cardio", "Machine", ["Full Body"], ["Back", "Legs", "Core", "Arms"], "1", "10-20 menit", "7", ["upper-back", "quadriceps", "hamstring", "abs", "biceps"], "Dorong dengan kaki dulu, lalu tarik handle ke rusuk."),
+  ex("hiit", "HIIT", "cardio", "Cardio", "Bodyweight", ["Full Body"], ["Core", "Legs", "Shoulder"], "1", "10-20 menit", "8", ["chest", "quadriceps", "hamstring", "abs", "front-deltoids"], "Pilih interval yang tetap menjaga teknik gerak."),
+  ex("full_body_squat", "Squat", "full_body", "Compound", "Barbell", ["Legs", "Glutes", "Core"], [], "3-4", "8-12", "7-8", ["quadriceps", "gluteal", "hamstring", "abs"], "Jadikan sebagai gerakan compound utama untuk lower body."),
+  ex("full_body_deadlift", "Deadlift", "full_body", "Compound", "Barbell", ["Back", "Hamstrings", "Glutes", "Core"], [], "3", "5-8", "8", ["lower-back", "hamstring", "gluteal", "abs"], "Prioritaskan teknik hinge dan brace sebelum menambah beban."),
+  ex("full_body_bench_press", "Bench Press", "full_body", "Compound", "Barbell", ["Chest", "Triceps", "Shoulder"], [], "3-4", "8-12", "7-8", ["chest", "triceps", "front-deltoids"], "Gunakan sebagai gerakan push utama."),
+  ex("full_body_pull_up", "Pull Up", "full_body", "Compound", "Bodyweight", ["Back", "Biceps"], [], "3", "6-10", "8", ["upper-back", "biceps", "back-deltoids"], "Gunakan bantuan band bila repetisi belum stabil."),
+  ex("full_body_overhead_press", "Overhead Press", "full_body", "Compound", "Barbell", ["Shoulders", "Triceps", "Core"], [], "3", "6-10", "7-8", ["front-deltoids", "triceps", "abs"], "Jaga core aktif saat menekan beban ke atas."),
+  ex("full_body_barbell_row", "Barbell Row", "full_body", "Compound", "Barbell", ["Back", "Biceps"], [], "3-4", "8-12", "7-8", ["upper-back", "lower-back", "biceps"], "Tarik bar dengan punggung tetap netral."),
+  ex("full_body_lunges", "Lunges", "full_body", "Compound", "Bodyweight/Dumbbell", ["Legs", "Glutes", "Core"], [], "3", "10/side", "7", ["quadriceps", "gluteal", "hamstring", "abs"], "Pilih langkah yang stabil dan tidak terlalu sempit."),
 ]
 
+const muscleMap: Record<string, Muscle[]> = {
+  Chest: ["chest"],
+  Back: ["upper-back", "trapezius"],
+  Shoulders: ["front-deltoids"],
+  "Rear Shoulders": ["back-deltoids"],
+  Biceps: ["biceps"],
+  Triceps: ["triceps"],
+  Core: ["abs", "obliques"],
+  Quads: ["quadriceps"],
+  "Lower Back": ["lower-back"],
+  Hamstrings: ["hamstring"],
+  Glutes: ["gluteal"],
+  Calves: ["calves"],
+  Cardio: ["quadriceps", "hamstring", "calves"],
+  "Full Body": ["chest", "upper-back", "quadriceps", "hamstring", "abs"],
+}
+
+const highlighterMuscleMap: Partial<Record<Muscle, string>> = {
+  chest: "Chest",
+  biceps: "Biceps",
+  triceps: "Triceps",
+  forearm: "Biceps",
+  "front-deltoids": "Shoulders",
+  "back-deltoids": "Rear Shoulders",
+  abs: "Core",
+  obliques: "Core",
+  quadriceps: "Quads",
+  adductor: "Quads",
+  abductors: "Glutes",
+  hamstring: "Hamstrings",
+  calves: "Calves",
+  gluteal: "Glutes",
+  trapezius: "Back",
+  "upper-back": "Back",
+  "lower-back": "Lower Back",
+}
+
+const muscleCategoryLabels: Record<string, string> = {
+  Chest: "Dada / Chest",
+  Back: "Punggung / Back",
+  Shoulders: "Bahu / Shoulder",
+  "Rear Shoulders": "Bahu Belakang / Rear Shoulder",
+  Biceps: "Lengan Depan / Biceps",
+  Triceps: "Lengan Belakang / Triceps",
+  "Lower Back": "Punggung Bawah / Lower Back",
+  Quads: "Kaki Depan / Quadriceps",
+  Hamstrings: "Kaki Belakang / Hamstring",
+  Glutes: "Bokong / Glutes",
+  Calves: "Betis / Calves",
+  Core: "Perut / Core",
+  Cardio: "Cardio",
+  "Full Body": "Compound / Full Body",
+}
+
+function ex(
+  id: string,
+  name: string,
+  muscleGroupId: MuscleGroupId,
+  type: string,
+  equipment: string,
+  primaryMuscles: string[],
+  secondaryMuscles: string[],
+  defaultSets: string,
+  defaultReps: string,
+  defaultRpe: string,
+  highlightedMuscles: Muscle[],
+  note: string,
+): ExerciseTemplate {
+  const muscleGroup = muscleGroups.find((group) => group.id === muscleGroupId)
+  const primary = primaryMuscles.join(", ")
+  const support = secondaryMuscles.join(", ")
+  return {
+    id,
+    name,
+    type,
+    muscle: muscleGroup?.label ?? muscleGroupId,
+    muscleGroupId,
+    primary,
+    support,
+    primaryMuscles,
+    secondaryMuscles,
+    highlightedMuscles,
+    equipment,
+    reps: defaultReps,
+    defaultSets,
+    defaultRpe,
+    note,
+    side: muscleGroup?.side ?? "front",
+    focus: support && support !== "-" ? `${primary} · pendukung: ${support}` : primary,
+  }
+}
+
+function exerciseKind(item: ExerciseTemplate) {
+  return item.type
+}
+
+function exerciseCategory(item: ExerciseTemplate) {
+  return muscleCategoryLabels[item.muscle] ?? item.muscle
+}
+
+function defaultExerciseForMuscle(muscle: string) {
+  const group = muscleGroups.find((item) => item.label === muscle)
+  const preferredId = group?.id === "quads" ? "leg_press" : undefined
+  return exerciseLibrary.find((item) => item.id === preferredId)
+    ?? exerciseLibrary.find((item) => item.muscleGroupId === group?.id)
+    ?? null
+}
+
+function numericSets(value: string) {
+  const match = value.match(/\d+/)
+  return Math.max(0, Number(match?.[0] ?? 3))
+}
+
+function defaultLoadNote(item: ExerciseTemplate) {
+  return `Set ${item.defaultSets} · RPE ${item.defaultRpe} · ${item.note}`
+}
+
+function rowFromExercise(item: ExerciseTemplate, id: string, dayName: string, current?: ExerciseRow | null): ExerciseRow {
+  return {
+    ...(current ?? row(id, dayName, "", "Strength", item.muscle, item.focus, item.equipment, numericSets(item.defaultSets), item.reps, "")),
+    id: current?.id ?? id,
+    dayName: current?.dayName ?? dayName,
+    exerciseName: item.name,
+    exerciseType: exerciseKind(item),
+    muscleGroup: item.muscle,
+    focus: item.focus,
+    equipmentRow: item.equipment,
+    sets: numericSets(item.defaultSets),
+    reps: item.reps,
+    loadNote: defaultLoadNote(item),
+  }
+}
+
 const templateRows = [
-  row("template-bench", "Senin", "Bench Press", "Strength", "Chest", "Push", "Barbell", 3, "8-10", "RPE 7"),
-  row("template-squat", "Senin", "Squat", "Strength", "Quads", "Knee dominant", "Barbell", 3, "8-12", "RPE 7"),
-  row("template-lat-pulldown", "Rabu", "Lat Pulldown", "Strength", "Back", "Vertical pull", "Cable", 3, "10-12", "Kontrol turun"),
-  row("template-shoulder-press", "Rabu", "Shoulder Press", "Strength", "Shoulders", "Overhead press", "Dumbbell", 3, "8-10", "RPE 7"),
-  row("template-leg-curl", "Jumat", "Leg Curl", "Hypertrophy", "Hamstrings", "Knee flexion", "Machine", 3, "12-15", "Tempo pelan"),
-  row("template-plank", "Jumat", "Plank", "Core", "Core", "Stability", "Bodyweight", 3, "30-60 detik", "Jaga napas"),
+  templateRow("template-bench", "Senin", "Bench Press"),
+  templateRow("template-leg-press", "Senin", "Leg Press"),
+  templateRow("template-lat-pulldown", "Rabu", "Lat Pulldown"),
+  templateRow("template-shoulder-press", "Rabu", "Shoulder Press"),
+  templateRow("template-leg-curl", "Jumat", "Leg Curl"),
+  templateRow("template-plank", "Jumat", "Plank"),
 ]
+
+function templateRow(id: string, dayName: string, exerciseName: string) {
+  const item = exerciseLibrary.find((exercise) => exercise.name === exerciseName)
+  if (item) return rowFromExercise(item, id, dayName)
+  return row(
+    id,
+    dayName,
+    exerciseName,
+    "Strength",
+    "Chest",
+    "",
+    "",
+    3,
+    "8-12",
+    "",
+  )
+}
 
 export function WorkoutTreeForm({
   program,
   profile,
   profileIncomplete,
+  gender,
 }: {
   program: WorkoutProgram
   profile: WorkoutProfile
   profileIncomplete: boolean
+  gender: string
 }) {
   const initialRows = useMemo(() => {
     const rows = [...(program?.workout_sessions ?? [])]
@@ -175,10 +389,15 @@ export function WorkoutTreeForm({
   const dashboard = useMemo(() => getWorkoutDashboard(rows, grouped), [rows, grouped])
   const calendar = useMemo(() => buildMonthCalendar(new Date(), grouped), [grouped])
   const coachNoteText = useMemo(() => coachNote(rows, workoutGoal), [rows, workoutGoal])
-  const filteredLibrary = useMemo(() => exerciseLibrary.filter((item) => item.muscle === selectedMuscle), [selectedMuscle])
-  const visibleLibrary = filteredLibrary.length
-    ? filteredLibrary
-    : exerciseLibrary.filter((item) => item.side === bodySide || item.side === "both").slice(0, 10)
+  const selectedExercise = useMemo(() => {
+    if (!editingRow?.exerciseName) return exerciseLibrary.find((item) => item.muscle === selectedMuscle) ?? null
+    return exerciseLibrary.find((item) =>
+      item.name.toLowerCase() === editingRow.exerciseName.toLowerCase()
+      && item.muscle === editingRow.muscleGroup
+    ) ?? exerciseLibrary.find((item) => item.name.toLowerCase() === editingRow.exerciseName.toLowerCase()) ?? null
+  }, [editingRow, selectedMuscle])
+  const bodyData = useMemo(() => buildBodyData(editingRow, selectedExercise), [editingRow, selectedExercise])
+  const visibleLibrary = useMemo(() => exerciseLibrary.filter((item) => item.muscle === selectedMuscle), [selectedMuscle])
 
   useEffect(() => {
     if (!state.message) return
@@ -187,24 +406,18 @@ export function WorkoutTreeForm({
   }, [state])
 
   function openCreateDialog() {
-    const firstExercise = exerciseLibrary.find((item) => item.muscle === selectedMuscle)
-    setEditingRow(row(
-      `custom-${Date.now()}`,
-      dashboard.todayName,
-      firstExercise?.name || "",
-      firstExercise?.type || "Strength",
-      selectedMuscle,
-      firstExercise?.focus || "",
-      firstExercise?.equipment || "",
-      3,
-      firstExercise?.reps || "8-12",
-      "",
-    ))
+    const firstExercise = defaultExerciseForMuscle(selectedMuscle)
+    setEditingRow(firstExercise
+      ? rowFromExercise(firstExercise, `custom-${Date.now()}`, dashboard.todayName)
+      : row(`custom-${Date.now()}`, dashboard.todayName, "", "Strength", selectedMuscle, "", "", 3, "8-12", ""))
     setDialogOpen(true)
   }
 
   function openEditDialog(item: ExerciseRow) {
-    const template = exerciseLibrary.find((exercise) => exercise.name.toLowerCase() === item.exerciseName.toLowerCase())
+    const template = exerciseLibrary.find((exercise) =>
+      exercise.name.toLowerCase() === item.exerciseName.toLowerCase()
+      && exercise.muscle === item.muscleGroup
+    ) ?? exerciseLibrary.find((exercise) => exercise.name.toLowerCase() === item.exerciseName.toLowerCase())
     setBodySide(template?.side === "back" ? "back" : "front")
     setSelectedMuscle(item.muscleGroup || "Chest")
     setEditingRow(item)
@@ -212,17 +425,20 @@ export function WorkoutTreeForm({
   }
 
   function applyExercise(item: ExerciseTemplate) {
-    setBodySide(item.side === "back" ? "back" : "front")
+    setBodySide(item.side === "back" || (item.side === "both" && bodySide === "back") ? "back" : "front")
     setSelectedMuscle(item.muscle)
-    setEditingRow((current) => ({
-      ...(current ?? row(`custom-${Date.now()}`, dashboard.todayName, "", "Strength", item.muscle, item.focus, item.equipment, 3, item.reps, "")),
-      exerciseName: item.name,
-      exerciseType: item.type,
-      muscleGroup: item.muscle,
-      focus: item.focus,
-      equipmentRow: item.equipment,
-      reps: item.reps,
-    }))
+    setEditingRow((current) => rowFromExercise(item, `custom-${Date.now()}`, dashboard.todayName, current))
+  }
+
+  function selectMuscleGroup(muscle: string) {
+    setSelectedMuscle(muscle)
+    const item = defaultExerciseForMuscle(muscle)
+    if (!item) {
+      setEditingRow((current) => current ? { ...current, muscleGroup: muscle } : current)
+      return
+    }
+    setBodySide(item.side === "back" || (item.side === "both" && bodySide === "back") ? "back" : "front")
+    setEditingRow((current) => rowFromExercise(item, `custom-${Date.now()}`, dashboard.todayName, current))
   }
 
   function saveDialogRow() {
@@ -541,10 +757,13 @@ export function WorkoutTreeForm({
                   Human belakang
                 </button>
               </div>
-              <HumanBodyPicker side={bodySide} selected={selectedMuscle} onSelect={(muscle) => {
-                setSelectedMuscle(muscle)
-                setEditingRow((current) => current ? { ...current, muscleGroup: muscle } : current)
-              }} />
+              <HumanBodyPicker
+                side={bodySide}
+                selected={selectedMuscle}
+                gender={gender}
+                data={bodyData}
+                onSelect={selectMuscleGroup}
+              />
             </div>
 
             <div className="space-y-4">
@@ -553,9 +772,10 @@ export function WorkoutTreeForm({
                 <div className="max-h-72 overflow-y-auto rounded-lg border border-border p-2">
                   <div className="grid gap-2 sm:grid-cols-2">
                     {visibleLibrary.map((item) => (
-                      <button key={item.name} type="button" onClick={() => applyExercise(item)} className={`rounded-lg border px-3 py-2 text-left text-sm transition ${editingRow?.exerciseName === item.name ? "border-primary bg-primary/10" : "border-border hover:border-primary/50 hover:bg-muted/50"}`}>
+                      <button key={item.id} type="button" onClick={() => applyExercise(item)} className={`rounded-lg border px-3 py-2 text-left text-sm transition ${editingRow?.exerciseName === item.name && editingRow.muscleGroup === item.muscle ? "border-primary bg-primary/10" : "border-border hover:border-primary/50 hover:bg-muted/50"}`}>
                         <span className="font-medium">{item.name}</span>
-                        <span className="mt-1 block text-xs text-muted-foreground">{item.muscle} · {item.equipment} · {item.reps}</span>
+                        <span className="mt-1 block text-xs text-muted-foreground">{exerciseCategory(item)} · {exerciseKind(item)}</span>
+                        <span className="mt-0.5 block text-xs text-muted-foreground">{item.primary} · {item.equipment} · {item.reps}</span>
                       </button>
                     ))}
                   </div>
@@ -563,18 +783,33 @@ export function WorkoutTreeForm({
               </div>
 
               {editingRow ? (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <SelectField label="Hari" value={editingRow.dayName} onChange={(value) => setEditingRow({ ...editingRow, dayName: value })} options={days} />
-                  <SelectField label="Jenis" value={editingRow.exerciseType} onChange={(value) => setEditingRow({ ...editingRow, exerciseType: value })} options={["Strength", "Hypertrophy", "Cardio", "Core", "Mobility", "Conditioning"]} />
-                  <TextField label="Nama latihan" value={editingRow.exerciseName} onChange={(value) => setEditingRow({ ...editingRow, exerciseName: value })} />
-                  <TextField label="Alat" value={editingRow.equipmentRow} onChange={(value) => setEditingRow({ ...editingRow, equipmentRow: value })} />
-                  <TextField label="Fokus" value={editingRow.focus} onChange={(value) => setEditingRow({ ...editingRow, focus: value })} />
-                  <TextField label="Reps" value={editingRow.reps} onChange={(value) => setEditingRow({ ...editingRow, reps: value })} />
-                  <div className="grid gap-2">
-                    <label className="text-sm font-medium">Set</label>
-                    <Input type="number" min={0} value={editingRow.sets} onChange={(event) => setEditingRow({ ...editingRow, sets: Math.max(0, Number(event.target.value) || 0) })} />
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3">
+                    <p className="text-sm font-semibold text-red-700 dark:text-red-300">Fokus otot yang dilatih</p>
+                    <div className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
+                      <div className="rounded-md bg-background/80 p-2">
+                        <p className="text-xs text-muted-foreground">Otot utama</p>
+                        <p className="font-medium">{selectedExercise?.primary || editingRow.muscleGroup}</p>
+                      </div>
+                      <div className="rounded-md bg-background/80 p-2">
+                        <p className="text-xs text-muted-foreground">Otot pendukung</p>
+                        <p className="font-medium">{selectedExercise?.support || "-"}</p>
+                      </div>
+                    </div>
                   </div>
-                  <TextField label="Catatan beban/RPE" value={editingRow.loadNote} onChange={(value) => setEditingRow({ ...editingRow, loadNote: value })} />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <SelectField label="Hari" value={editingRow.dayName} onChange={(value) => setEditingRow({ ...editingRow, dayName: value })} options={days} />
+                    <SelectField label="Jenis" value={editingRow.exerciseType} onChange={(value) => setEditingRow({ ...editingRow, exerciseType: value })} options={["Compound", "Strength", "Isolation", "Bodyweight", "Cardio", "Cardio/Core", "Core"]} />
+                    <TextField label="Nama latihan" value={editingRow.exerciseName} onChange={(value) => setEditingRow({ ...editingRow, exerciseName: value })} />
+                    <TextField label="Alat" value={editingRow.equipmentRow} onChange={(value) => setEditingRow({ ...editingRow, equipmentRow: value })} />
+                    <TextField label="Fokus" value={editingRow.focus} onChange={(value) => setEditingRow({ ...editingRow, focus: value })} />
+                    <TextField label="Reps" value={editingRow.reps} onChange={(value) => setEditingRow({ ...editingRow, reps: value })} />
+                    <div className="grid gap-2">
+                      <label className="text-sm font-medium">Set</label>
+                      <Input type="number" min={0} value={editingRow.sets} onChange={(event) => setEditingRow({ ...editingRow, sets: Math.max(0, Number(event.target.value) || 0) })} />
+                    </div>
+                    <TextField label="Catatan beban/RPE" value={editingRow.loadNote} onChange={(value) => setEditingRow({ ...editingRow, loadNote: value })} />
+                  </div>
                 </div>
               ) : null}
 
@@ -745,44 +980,68 @@ function ExerciseMobileCard({ item, canDelete, onEdit, onDelete }: { item: Exerc
   )
 }
 
-function HumanBodyPicker({ side, selected, onSelect }: { side: "front" | "back"; selected: string; onSelect: (muscle: string) => void }) {
-  const frontMuscles = ["Chest", "Shoulders", "Biceps", "Core", "Quads", "Cardio", "Full Body"]
-  const backMuscles = ["Back", "Shoulders", "Triceps", "Hamstrings", "Glutes", "Calves", "Cardio", "Full Body"]
+function buildBodyData(editingRow: ExerciseRow | null, selectedExercise: ExerciseTemplate | null): IExerciseData[] {
+  const muscles = selectedExercise
+    ? muscleMap[selectedExercise.muscle] ?? selectedExercise.highlightedMuscles
+    : (editingRow ? muscleMap[editingRow.muscleGroup] : []) ?? []
+
+  if (!editingRow || muscles.length === 0) return []
+
+  return [{
+    name: editingRow.exerciseName || selectedExercise?.name || editingRow.muscleGroup,
+    muscles,
+    frequency: 1,
+  }]
+}
+
+function HumanBodyPicker({
+  side,
+  selected,
+  gender,
+  data,
+  onSelect,
+}: {
+  side: "front" | "back"
+  selected: string
+  gender: string
+  data: IExerciseData[]
+  onSelect: (muscle: string) => void
+}) {
+  const frontMuscles = ["Chest", "Shoulders", "Biceps", "Core", "Quads", "Calves", "Cardio", "Full Body"]
+  const backMuscles = ["Back", "Rear Shoulders", "Triceps", "Lower Back", "Glutes", "Hamstrings", "Calves", "Full Body"]
   const muscles = side === "front" ? frontMuscles : backMuscles
   const buttonClass = (muscle: string) => selected === muscle ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"
+  const genderLabel = gender === "female" ? "Perempuan" : gender === "male" ? "Laki-laki" : "Profile"
+  const bodyColor = gender === "female" ? "#d8c7bf" : "#c9d0d8"
+  const highlightedColors = ["#ef4444"]
+
+  function handleBodyClick(stats: IMuscleStats) {
+    const mapped = highlighterMuscleMap[stats.muscle]
+    if (mapped) onSelect(mapped)
+  }
 
   return (
-    <div className="rounded-xl border border-border bg-muted/25 p-4">
-      <div className="grid gap-4 md:grid-cols-[15rem_1fr] xl:grid-cols-1">
-        <svg viewBox="0 0 220 320" className="mx-auto h-72 w-52 max-w-full" role="img" aria-label={`Human body ${side}`}>
-          <circle cx="110" cy="32" r="20" className={selected === "Shoulders" ? "fill-primary/80" : "fill-muted-foreground/25"} />
-          {side === "front" ? (
-            <>
-              <path d="M72 68 Q110 48 148 68 L139 111 Q110 126 81 111 Z" className={bodyFill(selected, "Chest")} onClick={() => onSelect("Chest")} />
-              <path d="M83 113 Q110 130 137 113 L130 188 Q110 204 90 188 Z" className={bodyFill(selected, "Core")} onClick={() => onSelect("Core")} />
-              <path d="M50 75 Q67 62 82 76 L70 166 Q55 169 45 155 Z" className={bodyFill(selected, "Biceps")} onClick={() => onSelect("Biceps")} />
-              <path d="M170 75 Q153 62 138 76 L150 166 Q165 169 175 155 Z" className={bodyFill(selected, "Biceps")} onClick={() => onSelect("Biceps")} />
-              <path d="M80 188 L104 188 L98 292 Q76 294 68 270 Z" className={bodyFill(selected, "Quads")} onClick={() => onSelect("Quads")} />
-              <path d="M116 188 L140 188 L152 270 Q144 294 122 292 Z" className={bodyFill(selected, "Quads")} onClick={() => onSelect("Quads")} />
-              <path d="M56 66 Q73 52 91 64 L82 82 Q66 76 55 91 Z" className={bodyFill(selected, "Shoulders")} onClick={() => onSelect("Shoulders")} />
-              <path d="M164 66 Q147 52 129 64 L138 82 Q154 76 165 91 Z" className={bodyFill(selected, "Shoulders")} onClick={() => onSelect("Shoulders")} />
-            </>
-          ) : (
-            <>
-              <path d="M72 68 Q110 50 148 68 L140 136 Q110 156 80 136 Z" className={bodyFill(selected, "Back")} onClick={() => onSelect("Back")} />
-              <path d="M83 138 Q110 154 137 138 L132 189 Q110 204 88 189 Z" className={bodyFill(selected, "Glutes")} onClick={() => onSelect("Glutes")} />
-              <path d="M50 75 Q67 62 82 76 L70 166 Q55 169 45 155 Z" className={bodyFill(selected, "Triceps")} onClick={() => onSelect("Triceps")} />
-              <path d="M170 75 Q153 62 138 76 L150 166 Q165 169 175 155 Z" className={bodyFill(selected, "Triceps")} onClick={() => onSelect("Triceps")} />
-              <path d="M80 188 L104 188 L98 260 Q78 264 70 244 Z" className={bodyFill(selected, "Hamstrings")} onClick={() => onSelect("Hamstrings")} />
-              <path d="M116 188 L140 188 L150 244 Q142 264 122 260 Z" className={bodyFill(selected, "Hamstrings")} onClick={() => onSelect("Hamstrings")} />
-              <path d="M72 252 Q85 266 98 262 L96 294 Q78 296 68 278 Z" className={bodyFill(selected, "Calves")} onClick={() => onSelect("Calves")} />
-              <path d="M122 262 Q135 266 148 252 L152 278 Q142 296 124 294 Z" className={bodyFill(selected, "Calves")} onClick={() => onSelect("Calves")} />
-              <path d="M56 66 Q73 52 91 64 L82 82 Q66 76 55 91 Z" className={bodyFill(selected, "Shoulders")} onClick={() => onSelect("Shoulders")} />
-              <path d="M164 66 Q147 52 129 64 L138 82 Q154 76 165 91 Z" className={bodyFill(selected, "Shoulders")} onClick={() => onSelect("Shoulders")} />
-            </>
-          )}
-        </svg>
-        <div className="grid content-start gap-2 sm:grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
+    <div className="overflow-hidden rounded-xl border border-border bg-[radial-gradient(circle_at_top,_hsl(var(--primary)/0.12),_transparent_45%),hsl(var(--card))] p-3 shadow-sm">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-sm font-semibold">{side === "front" ? "Human depan" : "Human belakang"}</p>
+          <p className="text-xs text-muted-foreground">Model {genderLabel} · merah = otot dilatih</p>
+        </div>
+        <Badge variant="secondary">{selected}</Badge>
+      </div>
+      <div className="grid gap-3 md:grid-cols-[14rem_1fr] xl:grid-cols-1">
+        <div className="mx-auto w-full max-w-56 rounded-lg border border-border bg-background/80 p-2">
+          <Model
+            type={side === "front" ? "anterior" : "posterior"}
+            data={data}
+            bodyColor={bodyColor}
+            highlightedColors={highlightedColors}
+            onClick={handleBodyClick}
+            style={{ width: "100%", height: "18rem", padding: "0.25rem" }}
+            svgStyle={{ filter: "drop-shadow(0 16px 28px rgba(15, 23, 42, 0.16))" }}
+          />
+        </div>
+        <div className="grid content-start gap-2 grid-cols-2 md:grid-cols-1 xl:grid-cols-2">
           {muscles.map((muscle) => (
             <button key={muscle} type="button" onClick={() => onSelect(muscle)} className={`h-10 rounded-md border border-border px-3 text-left text-sm font-medium transition ${buttonClass(muscle)}`}>
               {muscle}
@@ -792,12 +1051,6 @@ function HumanBodyPicker({ side, selected, onSelect }: { side: "front" | "back";
       </div>
     </div>
   )
-}
-
-function bodyFill(selected: string, muscle: string) {
-  return selected === muscle
-    ? "cursor-pointer fill-primary transition"
-    : "cursor-pointer fill-muted-foreground/30 transition hover:fill-primary/50"
 }
 
 function SelectField({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {

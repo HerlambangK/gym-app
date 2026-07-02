@@ -38,60 +38,40 @@ export default async function Page() {
           </Link>
         }
       />
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="border-emerald-500/20 bg-emerald-500/5">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-sm text-muted-foreground">Validasi</CardTitle>
-              <ShieldCheck size={18} className="text-emerald-700 dark:text-emerald-200" />
+      <Card className={!subscription ? "border-amber-500/30" : ""}>
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <CardTitle>Validasi Check-in</CardTitle>
+              <p className="mt-1 text-sm text-muted-foreground">GPS, cabang aktif, dan akses member dalam satu ringkasan.</p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xl font-semibold">GPS + radius cabang</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Check-in hanya valid jika posisi berada di dalam radius gym yang disimpan owner/admin.
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-sm text-muted-foreground">Cabang Aktif</CardTitle>
-              <MapPin size={18} className="text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="truncate text-xl font-semibold">{branch?.name || "-"}</p>
-            <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">
-              {branch ? `${branch.address}. Radius ${branch.radius_meters} meter.` : "Owner/admin perlu menyimpan lokasi cabang dulu."}
-            </p>
-          </CardContent>
-        </Card>
-        <Card className={!subscription ? "border-amber-500/30 bg-amber-500/5" : ""}>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between gap-3">
-              <CardTitle className="text-sm text-muted-foreground">Akses Member</CardTitle>
-              <Radar size={18} className="text-amber-700 dark:text-amber-200" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xl font-semibold">{activeSession ? "Sedang latihan" : subscription ? "Siap check-in" : "Belum aktif"}</p>
-              <Badge variant={activeSession || subscription ? "success" : "warning"} className="gap-1">
-                <CircleDot size={10} />
-                {activeSession ? "SESI AKTIF" : subscription ? "ELIGIBLE" : "BUTUH PAKET"}
-              </Badge>
-            </div>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {activeSession
-                ? "Akhiri sesi dari tombol check-out setelah latihan selesai."
-                : subscription
-                  ? "Tekan izinkan lokasi saat popup muncul, lalu check-in jika berada di area gym."
-                  : "Aktifkan paket membership lebih dulu. Tombol check-in bisa tampil siap secara GPS, tetapi server tetap menolak akun tanpa subscription aktif."}
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            <Badge variant={activeSession || subscription ? "success" : "warning"} className="gap-1">
+              <CircleDot size={10} />
+              {activeSession ? "SESI AKTIF" : subscription ? "ELIGIBLE" : "BUTUH PAKET"}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-2 p-4 pt-0 min-[430px]:grid-cols-2 sm:p-6 sm:pt-0 lg:grid-cols-3">
+          <CheckInfo
+            icon={ShieldCheck}
+            label="Validasi"
+            value="GPS + radius"
+            helper="Wajib di area gym"
+          />
+          <CheckInfo
+            icon={MapPin}
+            label="Cabang Aktif"
+            value={branch?.name || "-"}
+            helper={branch ? `Radius ${branch.radius_meters} meter` : "Lokasi belum disimpan"}
+          />
+          <CheckInfo
+            icon={Radar}
+            label="Akses Member"
+            value={activeSession ? "Sedang latihan" : subscription ? "Siap check-in" : "Belum aktif"}
+            helper={activeSession ? "Bisa checkout" : subscription ? "Server valid" : "Butuh paket"}
+          />
+        </CardContent>
+      </Card>
       <CheckInPanel
         branch={branch ? {
           name: branch.name,
@@ -102,6 +82,33 @@ export default async function Page() {
         } : null}
         initialActiveSession={activeSession ? { check_in_time: activeSession.check_in_time } : null}
       />
+    </div>
+  )
+}
+
+function CheckInfo({
+  icon: Icon,
+  label,
+  value,
+  helper,
+}: {
+  icon: typeof ShieldCheck
+  label: string
+  value: string
+  helper: string
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border border-border bg-muted/20 p-3">
+      <div className="flex items-start gap-2">
+        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-background text-primary">
+          <Icon size={15} />
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="mt-1 truncate text-sm font-semibold">{value}</p>
+          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{helper}</p>
+        </div>
+      </div>
     </div>
   )
 }

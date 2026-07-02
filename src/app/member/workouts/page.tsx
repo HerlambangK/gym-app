@@ -20,6 +20,7 @@ export default async function Page() {
     : [null, null]
   const workoutProfile = parseWorkoutNotes(target?.notes)
   const profileIncomplete = isFitnessProfileIncomplete(target)
+  if (!target?.gender) redirect("/member/profile?next=/member/workouts&missing=gender")
 
   return (
     <div className="space-y-6">
@@ -29,7 +30,12 @@ export default async function Page() {
         title="Workout Coach"
         description="Onboarding latihan, template program, exercise library, preview mingguan, dan rekomendasi progres yang mudah dipakai member."
       />
-      <WorkoutTreeForm program={program} profile={workoutProfile} profileIncomplete={profileIncomplete} />
+      <WorkoutTreeForm
+        program={program}
+        profile={workoutProfile}
+        profileIncomplete={profileIncomplete}
+        gender={target.gender}
+      />
     </div>
   )
 }

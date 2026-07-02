@@ -17,6 +17,7 @@ export const defaultWorkoutProfile = {
 }
 
 export type NutritionTargetLike = {
+  gender?: string | null
   height_cm?: number | null
   age?: number | null
   target_calories?: number | null
@@ -77,4 +78,3 @@ export function buildWorkoutNotes(input: {
 export function isFitnessProfileIncomplete(target: NutritionTargetLike) {
   return !target?.height_cm || !target?.age || !target?.target_calories || !target?.target_protein_gram
 }
-
