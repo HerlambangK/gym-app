@@ -2,6 +2,10 @@ import { readFileSync } from "fs"
 import { resolve } from "path"
 
 try {
+  if (process.env.SKIP_LOCAL_ENV === "1") {
+    throw new Error("Skipping local env load")
+  }
+
   const envPath = resolve(__dirname, ".env.local")
   const content = readFileSync(envPath, "utf-8")
   for (const line of content.split("\n")) {

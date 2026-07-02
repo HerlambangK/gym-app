@@ -2,13 +2,16 @@
  * @jest-environment node
  */
 
-import { getAdminClient, measureQuery } from "./helpers"
-import { TEST_PREFIX } from "./helpers"
+import { describeDb, getAdminClient, measureQuery, TEST_PREFIX } from "./helpers"
 
 jest.setTimeout(30000)
 
-describe("Database: membership_plans", () => {
-  const supabase = getAdminClient()
+describeDb("Database: membership_plans", () => {
+  let supabase: ReturnType<typeof getAdminClient>
+
+  beforeAll(() => {
+    supabase = getAdminClient()
+  })
 
   it("1. getPlans mengembalikan plan aktif terurut berdasarkan harga", async () => {
     const { data } = await measureQuery(

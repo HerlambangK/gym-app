@@ -2,12 +2,16 @@
  * @jest-environment node
  */
 
-import { getAdminClient, measureQuery } from "./helpers"
+import { describeDb, getAdminClient, measureQuery } from "./helpers"
 
 jest.setTimeout(30000)
 
-describe("Database: branches", () => {
-  const supabase = getAdminClient()
+describeDb("Database: branches", () => {
+  let supabase: ReturnType<typeof getAdminClient>
+
+  beforeAll(() => {
+    supabase = getAdminClient()
+  })
 
   it("1. branch ForgeFit Studio HQ ada dengan koordinat operasional valid", async () => {
     const { data } = await measureQuery(

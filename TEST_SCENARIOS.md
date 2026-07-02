@@ -135,6 +135,25 @@ Integration DB test mencetak speed setiap query ke stdout dengan format:
 [db-query] payments.list: 115.1ms
 ```
 
+Jika env Supabase admin tidak tersedia di CI, integration DB test akan skip seluruh suite database dengan pesan:
+
+```text
+[db-query] skipped: SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required
+```
+
+Env yang dibutuhkan agar test database benar-benar berjalan:
+
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_URL` atau `NEXT_PUBLIC_SUPABASE_URL`
+
+Public E2E tetap berjalan sebagai guest saat env Supabase public kosong. Halaman `/pricing` memakai data paket demo bila `SUPABASE_DB_URL`/`DATABASE_URL` tidak tersedia.
+
+Playwright memakai port `3000` secara default. Untuk verifikasi berdampingan dengan dev server yang sudah hidup, gunakan `PORT=3100`. Untuk menjalankan E2E terhadap production server hasil build, set `PLAYWRIGHT_WEB_SERVER_COMMAND`, contoh:
+
+```bash
+PORT=3100 PLAYWRIGHT_WEB_SERVER_COMMAND="npm run start -- --port 3100" npm run test:e2e
+```
+
 ---
 
 **Total: 29 test suites, 212 tests** — semua passing ✅
@@ -143,7 +162,7 @@ Integration DB test mencetak speed setiap query ke stdout dengan format:
 
 ```bash
 npm test                # semua test (212), termasuk integration DB jika env Supabase tersedia
-npm run test:integration # database integration + speed query per query
+npm run test:integration # database integration + speed query per query, skip jika env DB tidak tersedia
 npm run test:watch      # watch mode
 npm run test:coverage   # dengan coverage report
 ```
@@ -153,3 +172,4 @@ npm run test:coverage   # dengan coverage report
 - `npm run test:integration -- --runInBand`: 5 suites, 16 tests passed.
 - `npm test -- --runInBand`: 29 suites, 212 tests passed.
 - `npm run build`: passed.
+- `npm run test:e2e`: 21 tests passed.

@@ -2,11 +2,29 @@ import { createClient } from "@supabase/supabase-js"
 import type { WebSocketLikeConstructor } from "@supabase/realtime-js"
 import WebSocket from "ws"
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL!
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || ""
 export const TEST_PREFIX = process.env.CI_TEST_PREFIX || "ci_test_"
 
+export function hasSupabaseIntegrationEnv() {
+  return Boolean(supabaseUrl && serviceRoleKey)
+}
+
+export const describeDb = hasSupabaseIntegrationEnv() ? describe : describe.skip
+
+if (!hasSupabaseIntegrationEnv()) {
+  process.stdout.write(
+    "[db-query] skipped: SUPABASE_URL/NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required\n",
+  )
+}
+
 export function getAdminClient() {
+  if (!hasSupabaseIntegrationEnv()) {
+    throw new Error(
+      "Supabase integration env is required: set SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL plus SUPABASE_SERVICE_ROLE_KEY.",
+    )
+  }
+
   return createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false },
     realtime: { transport: WebSocket as unknown as WebSocketLikeConstructor },
@@ -41,5 +59,6 @@ export async function runCleanup() {
 }
 
 afterAll(async () => {
+  if (!hasSupabaseIntegrationEnv()) return
   await runCleanup()
 })

@@ -1,10 +1,20 @@
 jest.mock("@/lib/supabase-server", () => ({
   createServerSupabaseClient: jest.fn(),
-  createAdminSupabaseClient: jest.fn(),
+}));
+
+jest.mock("@/lib/db/users", () => ({
+  ensureUserRole: jest.fn(),
+  upsertUserProfile: jest.fn(),
+}));
+
+jest.mock("@/lib/db/members", () => ({
+  createMember: jest.fn(),
 }));
 
 import { registerAction } from "@/lib/auth";
-import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase-server";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { ensureUserRole, upsertUserProfile } from "@/lib/db/users";
+import { createMember } from "@/lib/db/members";
 
 function formData(values: Record<string, string>): FormData {
   const fd = new FormData();
@@ -22,34 +32,16 @@ function setupMocks(options?: {
       ? { data: { user: null }, error: { message: options.signUpError } }
       : { data: { user: { id: "00000000-0000-0000-0000-000000000002" } }, error: null },
   );
-  const insert = jest.fn().mockResolvedValue(
-    options?.insertError
-      ? { error: { message: options.insertError } }
-      : { error: null },
-  );
-  const maybeSingle = jest.fn().mockResolvedValue(
-    options?.roleFound === false
-      ? { data: null }
-      : { data: { id: "role-id" } },
-  );
-  const upsert = jest.fn().mockReturnValue({
-    select: jest.fn().mockReturnValue({
-      single: jest.fn().mockResolvedValue({ data: { id: "role-id", code: "MEMBER" }, error: null }),
-    }),
-    error: null,
-  });
+  if (options?.insertError) {
+    (upsertUserProfile as jest.Mock).mockRejectedValue(new Error(options.insertError));
+  } else {
+    (upsertUserProfile as jest.Mock).mockResolvedValue(undefined);
+  }
+  (ensureUserRole as jest.Mock).mockResolvedValue("MEMBER");
+  (createMember as jest.Mock).mockResolvedValue({ id: "member-id" });
 
   (createServerSupabaseClient as jest.Mock).mockResolvedValue({
     auth: { signUp },
-  });
-  (createAdminSupabaseClient as jest.Mock).mockResolvedValue({
-    from: jest.fn().mockReturnValue({
-      insert,
-      upsert,
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      maybeSingle,
-    }),
   });
 }
 

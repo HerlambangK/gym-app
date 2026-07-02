@@ -16,7 +16,7 @@ test.describe("Halaman Pricing", () => {
   })
 
   test("2. menampilkan badge Membership", async ({ page }) => {
-    await expect(page.getByText("Membership")).toBeVisible()
+    await expect(page.getByText("Membership", { exact: true })).toBeVisible()
   })
 
   test("3. menampilkan brand name dan navigasi di SiteHeader", async ({ page }) => {

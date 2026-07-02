@@ -2,12 +2,16 @@
  * @jest-environment node
  */
 
-import { getAdminClient, measureQuery, testEmail } from "./helpers"
+import { describeDb, getAdminClient, measureQuery, testEmail } from "./helpers"
 
 jest.setTimeout(30000)
 
-describe("Database: users & roles", () => {
-  const supabase = getAdminClient()
+describeDb("Database: users & roles", () => {
+  let supabase: ReturnType<typeof getAdminClient>
+
+  beforeAll(() => {
+    supabase = getAdminClient()
+  })
 
   it("1. roles memiliki 7 entry (SUPER_ADMIN, OWNER, MANAGER, ADMIN, MARKETING, TRAINER, MEMBER)", async () => {
     const { data } = await measureQuery(

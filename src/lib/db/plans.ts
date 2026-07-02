@@ -1,8 +1,35 @@
 import { eq, asc } from "drizzle-orm"
 import { db } from "@/lib/drizzle"
-import { membership_plans } from "@/db/schema"
+import { membership_plans, planTypeEnum } from "@/db/schema"
+import { membershipPlans } from "@/data/gym"
+
+type PlanType = (typeof planTypeEnum.enumValues)[number]
+
+function hasDatabaseUrl() {
+  return Boolean(process.env.SUPABASE_DB_URL || process.env.DATABASE_URL)
+}
+
+function normalizePlanType(type: string): PlanType {
+  const values = planTypeEnum.enumValues as readonly string[]
+  return values.includes(type) ? type as PlanType : "MONTHLY"
+}
 
 export async function getPlans() {
+  if (!hasDatabaseUrl()) {
+    return membershipPlans.map((plan) => ({
+      id: plan.code,
+      name: plan.name,
+      code: plan.code,
+      type: plan.type,
+      duration_days: plan.durationDays,
+      price: plan.price,
+      description: plan.description,
+      is_active: true,
+      created_at: null,
+      updated_at: null,
+    })).sort((a, b) => a.price - b.price)
+  }
+
   const data = await db
     .select()
     .from(membership_plans)
@@ -51,7 +78,7 @@ export async function upsertPlan(input: {
   const values = {
     name: input.name,
     code: input.code,
-    type: input.type as any,
+    type: normalizePlanType(input.type),
     duration_days: input.durationDays,
     price: input.price,
     description: input.description || null,

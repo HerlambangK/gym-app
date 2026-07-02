@@ -1,11 +1,21 @@
 jest.mock("@/lib/supabase-server", () => ({
   createServerSupabaseClient: jest.fn(),
-  createAdminSupabaseClient: jest.fn(),
+}));
+
+jest.mock("@/lib/db/users", () => ({
+  getUserRoleOrAssignDefault: jest.fn(),
+  upsertUserProfile: jest.fn(),
+}));
+
+jest.mock("@/lib/db/members", () => ({
+  createMember: jest.fn(),
 }));
 
 import { loginAction } from "@/lib/auth";
-import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase-server";
-import * as usersDb from "@/lib/db/users";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
+import { getUserRoleOrAssignDefault, upsertUserProfile } from "@/lib/db/users";
+import { createMember } from "@/lib/db/members";
+import type { RoleCode } from "@/types/domain";
 
 function formData(values: Record<string, string>): FormData {
   const fd = new FormData();
@@ -34,23 +44,15 @@ function setupMocks(options: {
   );
   const signOut = jest.fn().mockResolvedValue({ error: null });
 
-  jest.spyOn(usersDb, "getUserRoleOrAssignDefault").mockResolvedValue(
-    (options.role as any) || "MEMBER",
+  (upsertUserProfile as jest.Mock).mockResolvedValue(undefined);
+  (getUserRoleOrAssignDefault as jest.Mock).mockResolvedValue(
+    (options.role as RoleCode | undefined) || "MEMBER",
   );
+  (createMember as jest.Mock).mockResolvedValue({ id: "member-id" });
+
   const maybeSingle = jest.fn().mockResolvedValue(
     options.role ? { data: { roles: { code: options.role } } } : { data: null },
   );
-  const upsert = jest.fn().mockReturnValue({
-    select: jest.fn().mockReturnValue({
-      single: jest.fn().mockResolvedValue({ data: { id: "role-id", code: "MEMBER" }, error: null }),
-    }),
-    error: null,
-  });
-  const insert = jest.fn().mockReturnValue({
-    select: jest.fn().mockReturnValue({
-      single: jest.fn().mockResolvedValue({ data: { id: "member-id" }, error: null }),
-    }),
-  });
 
   (createServerSupabaseClient as jest.Mock).mockResolvedValue({
     auth: {
@@ -63,16 +65,6 @@ function setupMocks(options: {
         eq: jest.fn().mockReturnThis(),
         maybeSingle,
       }),
-    }),
-  });
-
-  (createAdminSupabaseClient as jest.Mock).mockResolvedValue({
-    from: jest.fn().mockReturnValue({
-      insert,
-      upsert,
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      maybeSingle,
     }),
   });
 }
