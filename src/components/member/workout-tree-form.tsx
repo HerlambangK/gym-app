@@ -377,6 +377,10 @@ export function WorkoutTreeForm({
   const [activeTab, setActiveTab] = useState<(typeof tabs)[number]["id"]>("program")
   const [editingRow, setEditingRow] = useState<ExerciseRow | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [quickDialogOpen, setQuickDialogOpen] = useState(false)
+  const [quickExerciseId, setQuickExerciseId] = useState("")
+  const [quickQuery, setQuickQuery] = useState("")
+  const [quickReps, setQuickReps] = useState("")
   const [selectedMuscle, setSelectedMuscle] = useState("Chest")
   const [bodySide, setBodySide] = useState<"front" | "back">("front")
   const [state, action, pending] = useActionState(saveWorkoutProgram, initialState)
@@ -398,6 +402,15 @@ export function WorkoutTreeForm({
   }, [editingRow, selectedMuscle])
   const bodyData = useMemo(() => buildBodyData(editingRow, selectedExercise), [editingRow, selectedExercise])
   const visibleLibrary = useMemo(() => exerciseLibrary.filter((item) => item.muscle === selectedMuscle), [selectedMuscle])
+  const quickMatches = useMemo(() => {
+    const query = quickQuery.trim().toLowerCase()
+    const source = query
+      ? exerciseLibrary.filter((item) =>
+          `${item.name} ${item.muscle} ${item.type}`.toLowerCase().includes(query)
+        )
+      : exerciseLibrary
+    return source.slice(0, 8)
+  }, [quickQuery])
 
   useEffect(() => {
     if (!state.message) return
@@ -411,6 +424,17 @@ export function WorkoutTreeForm({
       ? rowFromExercise(firstExercise, `custom-${Date.now()}`, dashboard.todayName)
       : row(`custom-${Date.now()}`, dashboard.todayName, "", "Strength", selectedMuscle, "", "", 3, "8-12", ""))
     setDialogOpen(true)
+  }
+
+  function openQuickDialog() {
+    const todayExercise = rows.find((item) => item.dayName === dashboard.todayName)
+    const fallback = todayExercise
+      ? exerciseLibrary.find((item) => item.name === todayExercise.exerciseName && item.muscle === todayExercise.muscleGroup)
+      : defaultExerciseForMuscle(selectedMuscle)
+    setQuickExerciseId(fallback?.id ?? "")
+    setQuickQuery(fallback?.name ?? "")
+    setQuickReps(fallback?.reps ?? "")
+    setQuickDialogOpen(true)
   }
 
   function openEditDialog(item: ExerciseRow) {
@@ -456,6 +480,37 @@ export function WorkoutTreeForm({
     setEditingRow(null)
   }
 
+  function selectQuickExercise(item: ExerciseTemplate) {
+    setQuickExerciseId(item.id)
+    setQuickQuery(item.name)
+    setQuickReps(item.reps)
+  }
+
+  function addQuickToday() {
+    const query = quickQuery.trim().toLowerCase()
+    const selected = exerciseLibrary.find((item) => item.id === quickExerciseId)
+      ?? exerciseLibrary.find((item) => item.name.toLowerCase() === query)
+      ?? exerciseLibrary.find((item) => `${item.name} ${item.muscle}`.toLowerCase().includes(query))
+
+    if (!selected) {
+      toast.error("Pilih jenis latihan dari dropdown dulu.")
+      return
+    }
+
+    const reps = quickReps.trim() || selected.reps
+    const nextRow = {
+      ...rowFromExercise(selected, `today-${Date.now()}`, dashboard.todayName),
+      reps,
+      loadNote: `${defaultLoadNote(selected)} · Input cepat hari ini`,
+    }
+    setRows((current) => [...current, nextRow])
+    setSelectedMuscle(selected.muscle)
+    setBodySide(selected.side === "back" ? "back" : "front")
+    setQuickDialogOpen(false)
+    setActiveTab("history")
+    toast.success(`${selected.name} ditambahkan ke progres hari ini. Klik Simpan Program untuk menyimpan ke database.`)
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {profileIncomplete ? (
@@ -492,7 +547,13 @@ export function WorkoutTreeForm({
               {workoutGoal} · {workoutLevel} · {workoutDays}x/minggu · {workoutDuration} menit
             </p>
           </div>
-          <Badge variant="secondary">{dashboard.totalSets} set/minggu</Badge>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Badge variant="secondary">{dashboard.totalSets} set/minggu</Badge>
+            <Button type="button" className="gap-2" onClick={openQuickDialog}>
+              <Plus size={16} />
+              Input Hari Ini
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -544,6 +605,10 @@ export function WorkoutTreeForm({
                   <CardDescription>Input lewat anatomy selector, daftar program tetap ringkas untuk mobile dan desktop.</CardDescription>
                 </div>
                 <div className="grid gap-2 sm:grid-cols-2 lg:flex">
+                  <Button type="button" variant="secondary" className="gap-2" onClick={openQuickDialog}>
+                    <Plus size={16} />
+                    Input Hari Ini
+                  </Button>
                   <Button type="button" variant="outline" onClick={() => setRows(templateRows.map((item, index) => ({ ...item, id: `${item.id}-copy-${index}` })))}>
                     Pakai Template
                   </Button>
@@ -817,6 +882,61 @@ export function WorkoutTreeForm({
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Batal</Button>
                 <Button type="button" onClick={saveDialogRow}>Simpan Latihan</Button>
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={quickDialogOpen} onOpenChange={setQuickDialogOpen}>
+        <DialogContent className="max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Input Latihan Hari Ini</DialogTitle>
+            <DialogDescription>Pilih jenis latihan dan isi reps. Detail otot, alat, set, dan catatan progres akan mengikuti library latihan.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Jenis latihan</label>
+              <Input
+                value={quickQuery}
+                onChange={(event) => {
+                  setQuickQuery(event.target.value)
+                  setQuickExerciseId("")
+                  const selected = exerciseLibrary.find((item) => item.name.toLowerCase() === event.target.value.trim().toLowerCase())
+                  if (selected) {
+                    setQuickExerciseId(selected.id)
+                    setQuickReps(selected.reps)
+                  }
+                }}
+                placeholder="Ketik contoh: Leg Press"
+                autoComplete="off"
+              />
+              <div className="max-h-56 overflow-y-auto rounded-lg border border-border p-2">
+                <div className="grid gap-2">
+                  {quickMatches.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => selectQuickExercise(item)}
+                      className={`rounded-md border px-3 py-2 text-left text-sm transition ${quickExerciseId === item.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/50 hover:bg-muted/50"}`}
+                    >
+                      <span className="font-medium">{item.name}</span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">{item.muscle} · {item.type} · {item.reps}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <TextField label="Reps hari ini" value={quickReps} onChange={setQuickReps} />
+
+            <div className="rounded-lg border border-border bg-muted/25 p-3 text-sm text-muted-foreground">
+              Masuk ke jadwal {dashboard.todayName}. Progres mingguan langsung berubah setelah ditambahkan.
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <Button type="button" variant="outline" onClick={() => setQuickDialogOpen(false)}>Batal</Button>
+              <Button type="button" onClick={addQuickToday}>Tambahkan</Button>
             </div>
           </div>
         </DialogContent>
