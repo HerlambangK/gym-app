@@ -71,23 +71,31 @@ export function AppSidebar({
   role,
   userName,
   userEmail,
+  brandName,
+  brandLogoUrl,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   role: RoleCode
   userName: string
   userEmail: string
+  brandName?: string
+  brandLogoUrl?: string
 }) {
   const pathname = usePathname()
   const navItems = navByRole[role] || []
 
   const data: AppSidebarData = useMemo(() => ({
-    teams: [{ name: "ForgeFit Studio", logo: <Dumbbell />, plan: "Gym Management" }],
+    teams: [{
+      name: brandName || "ForgeFit Studio",
+      logo: brandLogoUrl || <Dumbbell />,
+      plan: "Gym Management",
+    }],
     navMain: navItems.map((item) => ({
       ...item,
       isActive: pathname === item.url || pathname.startsWith(item.url + "/"),
     })),
     user: { name: userName, email: userEmail },
-  }), [navItems, pathname, userName, userEmail])
+  }), [navItems, pathname, userName, userEmail, brandName, brandLogoUrl])
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -97,8 +105,8 @@ export function AppSidebar({
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
-      <SidebarFooter className="hidden md:flex">
-        <NavUser user={data.user} role={role} />
+      <SidebarFooter>
+        <NavUser user={data.user} role={role} brandName={data.teams[0]?.name} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

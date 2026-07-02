@@ -1,7 +1,9 @@
 import Link from "next/link"
+import Image from "next/image"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { logoutAction } from "@/lib/auth"
 import { extractRoleCode, getDashboardPathForRole } from "@/lib/auth-routing"
+import { getBrandingSettings } from "@/lib/db/branding"
 import { Dumbbell, LogIn, User, LogOut } from "lucide-react"
 import { brand, navItems } from "@/data/gym"
 import { Button } from "@/components/ui/button"
@@ -21,16 +23,26 @@ export async function SiteHeader() {
     return getDashboardPathForRole(extractRoleCode(roleData))
   }
 
-  const dashboardLink = await getDashboardLink()
+  const [dashboardLink, branding] = await Promise.all([
+    getDashboardLink(),
+    getBrandingSettings().catch(() => null),
+  ])
+
+  const brandName = branding?.brand_name || brand.name
+  const logoUrl = branding?.logo_url || null
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5">
         <Link href="/" className="flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-md bg-primary text-primary-foreground">
-            <Dumbbell size={20} />
+          <span className="grid size-10 place-items-center overflow-hidden rounded-md bg-primary text-primary-foreground">
+            {logoUrl ? (
+              <Image src={logoUrl} alt={brandName} width={40} height={40} className="size-full object-cover" />
+            ) : (
+              <Dumbbell size={20} />
+            )}
           </span>
-          <span className="font-semibold text-foreground">{brand.name}</span>
+          <span className="font-semibold text-foreground">{brandName}</span>
         </Link>
         <nav className="hidden items-center gap-6 md:flex">
           {navItems.map((item) => (

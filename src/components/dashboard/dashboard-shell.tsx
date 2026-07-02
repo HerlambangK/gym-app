@@ -12,17 +12,21 @@ export function DashboardShell({
   title,
   userName,
   userEmail,
+  brandName,
+  brandLogoUrl,
   children,
 }: {
   role: RoleCode
   title: string
   userName: string
   userEmail: string
+  brandName?: string
+  brandLogoUrl?: string
   children: React.ReactNode
 }) {
   return (
     <SidebarProvider>
-      <AppSidebar role={role} userName={userName} userEmail={userEmail} />
+      <AppSidebar role={role} userName={userName} userEmail={userEmail} brandName={brandName} brandLogoUrl={brandLogoUrl} />
       <SidebarInset>
         <header className="sticky top-0 z-30 flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-background/90 px-3 backdrop-blur transition-[width,height] ease-linear sm:h-16 sm:px-4 group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex min-w-0 items-center gap-2">

@@ -604,17 +604,17 @@ export function WorkoutTreeForm({
                   <CardTitle>Program Latihan</CardTitle>
                   <CardDescription>Input lewat anatomy selector, daftar program tetap ringkas untuk mobile dan desktop.</CardDescription>
                 </div>
-                <div className="grid grid-cols-3 gap-2 lg:flex">
-                  <Button type="button" variant="secondary" className="gap-1 px-2 sm:gap-2" onClick={openQuickDialog}>
-                    <Plus size={16} />
-                    Input Hari Ini
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" variant="secondary" size="sm" className="gap-1.5" onClick={openQuickDialog}>
+                    <Plus size={15} />
+                    <span>Input Hari Ini</span>
                   </Button>
-                  <Button type="button" variant="outline" className="px-2" onClick={() => setRows(templateRows.map((item, index) => ({ ...item, id: `${item.id}-copy-${index}` })))}>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setRows(templateRows.map((item, index) => ({ ...item, id: `${item.id}-copy-${index}` })))}>
                     Pakai Template
                   </Button>
-                  <Button type="button" className="gap-1 px-2 sm:gap-2" onClick={openCreateDialog}>
-                    <Plus size={16} />
-                    Tambah Latihan
+                  <Button type="button" size="sm" className="gap-1.5" onClick={openCreateDialog}>
+                    <Plus size={15} />
+                    <span>Tambah Latihan</span>
                   </Button>
                 </div>
               </div>

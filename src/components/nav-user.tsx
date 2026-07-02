@@ -26,12 +26,14 @@ import type { RoleCode } from "@/types/domain"
 export function NavUser({
   user,
   role,
+  brandName,
 }: {
   user: {
     name: string
     email: string
   }
   role: RoleCode
+  brandName?: string
 }) {
   const initials = user.name
     ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
@@ -82,11 +84,20 @@ export function NavUser({
                   </Avatar>
                   <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-xs">{user.email}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+                    {brandName && (
+                      <span className="truncate text-xs text-sidebar-foreground/50">{brandName}</span>
+                    )}
                   </div>
                 </div>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <div className="px-2 py-1.5">
+              <span className="inline-flex items-center rounded-full border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                {role}
+              </span>
+            </div>
             <DropdownMenuSeparator />
             <Link href={profileHref}>
               <DropdownMenuItem className="h-10 gap-2 px-2">

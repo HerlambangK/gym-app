@@ -1,20 +1,31 @@
 import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import { FaviconSwitcher } from "@/components/favicon-switcher";
+import { getBrandingSettings } from "@/lib/db/branding";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = {
-  title: "ForgeFit Studio | Gym Management",
-  description:
-    "Fullstack gym management system with RBAC, billing, attendance, and premium membership features.",
-  icons: {
-    icon: [
-      { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
-      { url: "/favicon.ico", sizes: "32x32" },
-    ],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const branding = await getBrandingSettings()
+
+  const title = branding?.brand_name
+    ? `${branding.brand_name} | Gym Management`
+    : "ForgeFit Studio | Gym Management"
+
+  const description = branding?.tagline
+    || "Fullstack gym management system with RBAC, billing, attendance, and premium membership features."
+
+  const icons: Metadata["icons"] = branding?.favicon_url
+    ? { icon: [{ url: branding.favicon_url, sizes: "any" }] }
+    : {
+        icon: [
+          { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
+          { url: "/favicon.ico", sizes: "32x32" },
+        ],
+      }
+
+  return { title, description, icons }
+}
 
 export default function RootLayout({
   children,
