@@ -53,7 +53,6 @@ export default function Home() {
   const [dashboardHref, setDashboardHref] = useState("/member/dashboard")
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
-  const [seedPending, setSeedPending] = useState(false)
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
   const [resendSending, setResendSending] = useState(false)
 
@@ -141,22 +140,6 @@ export default function Home() {
 
   function switchToRegister() { setLoginOpen(false); setRegisterOpen(true) }
   function switchToLogin() { setRegisterOpen(false); setLoginOpen(true) }
-  async function seedDemoAccounts() {
-    setSeedPending(true)
-    try {
-      const response = await fetch("/api/auth/seed-demo", { method: "POST" })
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok) {
-        toast.error(data.error || "Gagal seed akun demo.")
-        return
-      }
-      toast.success("Akun demo owner/admin/member siap dipakai.")
-    } catch {
-      toast.error("Gagal menghubungi endpoint seed demo.")
-    } finally {
-      setSeedPending(false)
-    }
-  }
 
   const regDisabled = regPending || cooldown > 0
 
@@ -211,7 +194,6 @@ export default function Home() {
                     <form action={loginFormAction} className="mt-2 grid gap-4">
                       <input type="hidden" name="next" value={nextPath} />
                       <div className="grid gap-2 rounded-xl border border-border/70 bg-muted/35 p-3">
-                        <div className="grid grid-cols-[1fr_auto] gap-2">
                           <div className="grid grid-cols-3 gap-2">
                             {demoAccounts.map((account) => (
                               <button
@@ -228,15 +210,6 @@ export default function Home() {
                               </button>
                             ))}
                           </div>
-                          <button
-                            type="button"
-                            onClick={seedDemoAccounts}
-                            disabled={seedPending}
-                            className="rounded-lg bg-foreground px-3 py-2 text-xs font-semibold text-background transition-opacity disabled:opacity-60"
-                          >
-                            {seedPending ? "Seed..." : "Seed"}
-                          </button>
-                        </div>
                         <div className="grid gap-1 text-xs text-muted-foreground">
                           {demoAccounts.map((account) => (
                             <p key={account.email}>
