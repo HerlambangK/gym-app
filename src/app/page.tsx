@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useActionState } from "react"
+import { useState, useEffect, useActionState, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, Eye, EyeOff, Dumbbell, User, LogOut, X, ChevronRight, Star, Clock, Menu, Check, Smartphone, BarChart3, CreditCard, MapPin } from "lucide-react"
@@ -17,7 +17,7 @@ import { getDashboardPathForRole } from "@/lib/auth-routing"
 import { demoAccounts } from "@/lib/demo-accounts"
 import { toast } from "sonner"
 
-const COOLDOWN_SECONDS = 120
+const DEFAULT_COOLDOWN = 60
 
 const benefits = [
   { icon: Smartphone, title: "Akses Berbasis Peran", text: "Owner, admin, trainer, dan member — masing-masing punya kendali sesuai perannya." },
@@ -47,12 +47,15 @@ export default function Home() {
   const [showLoginPassword, setShowLoginPassword] = useState(false)
   const [showRegPassword, setShowRegPassword] = useState(false)
   const [cooldown, setCooldown] = useState(0)
+  const [maxCooldown, setMaxCooldown] = useState(60)
   const [menuOpen, setMenuOpen] = useState(false)
   const [nextPath, setNextPath] = useState("")
   const [dashboardHref, setDashboardHref] = useState("/member/dashboard")
   const [loginEmail, setLoginEmail] = useState("")
   const [loginPassword, setLoginPassword] = useState("")
   const [seedPending, setSeedPending] = useState(false)
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
+  const [resendSending, setResendSending] = useState(false)
 
   useEffect(() => {
     const supabase = createBrowserSupabaseClient()
@@ -91,15 +94,28 @@ export default function Home() {
   }, [cooldown])
 
   const [loginState, loginFormAction, loginPending] = useActionState(loginAction, null)
+  const loginErrorRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!loginState) return
-    if (loginState.error) toast.error(loginState.error)
+    if (loginState.error) {
+      toast.error(loginState.error)
+      loginErrorRef.current = loginState.error
+    }
     if (loginState.redirectTo) {
       toast.success("Login berhasil!")
-      setTimeout(() => { window.location.href = loginState.redirectTo! }, 300)
+      const href = loginState.redirectTo
+      const timer = setTimeout(() => { window.location.href = href }, 300)
+      return () => clearTimeout(timer)
     }
   }, [loginState])
+
+  useEffect(() => {
+    if (loginErrorRef.current?.toLowerCase().includes("verifikasi") || loginErrorRef.current?.toLowerCase().includes("verified")) {
+      setUnverifiedEmail(loginEmail)
+    }
+    loginErrorRef.current = null
+  }, [loginEmail])
 
   const [regState, regFormAction, regPending] = useActionState(registerAction, null)
 
@@ -108,15 +124,18 @@ export default function Home() {
     if (regState.error) {
       toast.error(regState.error)
       if (regState.cooldown) {
-        window.setTimeout(() => setCooldown(COOLDOWN_SECONDS), 0)
+        const cd = regState.cooldownSeconds ?? DEFAULT_COOLDOWN
+        const timer = setTimeout(() => { setCooldown(cd); setMaxCooldown(cd) }, 0)
+        return () => clearTimeout(timer)
       }
     }
     if (regState.redirectTo) {
       toast.success("Pendaftaran berhasil! Cek email untuk verifikasi.")
-      window.setTimeout(() => {
-        setRegisterOpen(false)
-        setLoginOpen(true)
+      const regEmail = (document.getElementById("register-email") as HTMLInputElement)?.value || ""
+      const timer = setTimeout(() => {
+        window.location.href = `/auth/verify?email=${encodeURIComponent(regEmail)}`
       }, 0)
+      return () => clearTimeout(timer)
     }
   }, [regState])
 
@@ -183,7 +202,7 @@ export default function Home() {
                 <Button variant="ghost" size="sm" className="hidden sm:inline-flex" onClick={() => setLoginOpen(true)}>Masuk</Button>
                 <Button size="sm" onClick={() => setRegisterOpen(true)} className="shadow-lg shadow-foreground/10">Daftar</Button>
 
-                <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+                <Dialog open={loginOpen} onOpenChange={(open) => { setLoginOpen(open); if (!open) setUnverifiedEmail(null) }}>
                   <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-[440px]">
                     <DialogHeader>
                       <DialogTitle className="text-xl">Masuk</DialogTitle>
@@ -263,6 +282,32 @@ export default function Home() {
                           </button>
                         </div>
                       </div>
+                      {unverifiedEmail && (
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm dark:border-amber-800 dark:bg-amber-950">
+                          <p className="mb-2 font-medium text-amber-800 dark:text-amber-300">Email belum diverifikasi</p>
+                          <button
+                            type="button"
+                            disabled={resendSending}
+                            onClick={async () => {
+                              setResendSending(true)
+                              try {
+                                const res = await fetch("/api/auth/resend-verification", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ email: unverifiedEmail }),
+                                })
+                                const data = await res.json()
+                                if (!res.ok) { toast.error(data.error || "Gagal kirim ulang."); return }
+                                toast.success("Email verifikasi telah dikirim ulang!")
+                              } catch { toast.error("Gagal menghubungi server.") }
+                              finally { setResendSending(false) }
+                            }}
+                            className="text-sm font-medium text-primary hover:underline disabled:opacity-50"
+                          >
+                            {resendSending ? "Mengirim..." : "Kirim Ulang Email Verifikasi"}
+                          </button>
+                        </div>
+                      )}
                       <Button type="submit" disabled={loginPending} className="h-10 w-full">
                         {loginPending ? "Memproses..." : "Masuk"}
                       </Button>
@@ -316,7 +361,7 @@ export default function Home() {
                             <span className="font-medium text-amber-500">Email sudah terdaftar</span>
                             <span className="tabular-nums text-muted-foreground">{Math.floor(cooldown / 60)}:{String(cooldown % 60).padStart(2, "0")}</span>
                           </div>
-                          <Progress value={(cooldown / COOLDOWN_SECONDS) * 100} className="h-1.5" />
+                          <Progress value={(cooldown / maxCooldown) * 100} className="h-1.5" />
                         </div>
                       )}
                       <p className="text-center text-sm text-muted-foreground">

@@ -1,4 +1,4 @@
-import { eq, or, and } from "drizzle-orm"
+import { eq } from "drizzle-orm"
 import { db } from "@/lib/drizzle"
 import { users, roles, user_roles, role_permissions, permissions } from "@/db/schema"
 import { extractRoleCode } from "@/lib/auth-routing"
@@ -110,6 +110,17 @@ export async function getUserRoleOrAssignDefault(userId: string, defaultRole: Ro
   const existingRole = await getUserRole(userId)
   if (existingRole) return existingRole
   return ensureUserRole(userId, defaultRole)
+}
+
+export async function setVerificationSentAt(userId: string) {
+  await db
+    .update(users)
+    .set({ verification_sent_at: new Date().toISOString() })
+    .where(eq(users.id, userId))
+}
+
+export async function deleteUserById(userId: string) {
+  await db.delete(users).where(eq(users.id, userId))
 }
 
 export async function getUserPermissions(userId: string): Promise<string[]> {

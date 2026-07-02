@@ -29,6 +29,7 @@ export const users = pgTable("users", {
   phone: text(),
   password_hash: text(),
   status: userStatus().notNull().default("ACTIVE"),
+  verification_sent_at: text("verification_sent_at"),
   created_at: text("created_at").notNull().default(sql`now()`),
   updated_at: text("updated_at").notNull().default(sql`now()`),
 })

@@ -5,9 +5,9 @@ import { redirect } from "next/navigation"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { canAccessDashboardPath, getDashboardPathForRole } from "@/lib/auth-routing"
 import { createMember } from "@/lib/db/members"
-import { ensureUserRole, getUserRoleOrAssignDefault, upsertUserProfile } from "@/lib/db/users"
+import { ensureUserRole, getUserRoleOrAssignDefault, upsertUserProfile, setVerificationSentAt } from "@/lib/db/users"
 
-export type ActionResult = { error?: string; redirectTo?: string; cooldown?: boolean }
+export type ActionResult = { error?: string; redirectTo?: string; cooldown?: boolean; cooldownSeconds?: number }
 
 function hashPassword(password: string): string {
   const salt = crypto.randomBytes(16).toString("hex")
@@ -25,7 +25,7 @@ function validatePhone(phone: string) {
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
-    const cause = (error as any).cause
+    const cause = (error as { cause?: unknown }).cause
     return error.message + (cause ? ` (cause: ${JSON.stringify(cause)})` : "")
   }
   if (error && typeof error === "object" && "message" in error) {
@@ -62,7 +62,7 @@ export async function registerAction(_prev: ActionResult | null, formData: FormD
   if (authError) {
     const msg = authError.message.toLowerCase()
     if (msg.includes("already registered") || msg.includes("already exists")) {
-      return { error: "Email sudah terdaftar. Silakan cek email untuk verifikasi.", cooldown: true }
+      return { error: "Email sudah terdaftar. Silakan cek email untuk verifikasi.", cooldown: true, cooldownSeconds: 30 }
     }
     if (msg.includes("password")) {
       return { error: "Password terlalu lemah. Gunakan minimal 6 karakter." }
@@ -74,7 +74,7 @@ export async function registerAction(_prev: ActionResult | null, formData: FormD
   }
 
   if (!authData.user) {
-    return { error: "Email sudah terdaftar. Silakan cek email untuk verifikasi.", cooldown: true }
+    return { error: "Email sudah terdaftar. Silakan cek email untuk verifikasi.", cooldown: true, cooldownSeconds: 30 }
   }
 
   const passwordHash = hashPassword(password)
@@ -87,13 +87,14 @@ export async function registerAction(_prev: ActionResult | null, formData: FormD
       phone,
       passwordHash,
     })
+    await setVerificationSentAt(authData.user.id)
     await ensureUserRole(authData.user.id, "MEMBER")
     await createMember(authData.user.id, "TRIAL")
   } catch (error) {
     const message = getErrorMessage(error)
     console.error("registerAction profile/role/member error:", error)
     if (message.includes("already exists") || message.includes("duplicate")) {
-      return { error: "Email sudah terdaftar. Silakan cek email untuk verifikasi.", cooldown: true }
+      return { error: "Email sudah terdaftar. Silakan cek email untuk verifikasi.", cooldown: true, cooldownSeconds: 30 }
     }
     if (message.includes("does not exist") || message.includes("relation")) {
       console.error("DB schema not ready:", message)

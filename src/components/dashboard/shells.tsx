@@ -1,6 +1,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { getBrandingSettings } from "@/lib/db/branding"
+import { getUserById } from "@/lib/db/users"
 import { redirect } from "next/navigation"
 
 async function getCurrentUser() {
@@ -22,14 +23,30 @@ async function getBranding() {
   }
 }
 
+async function getUserProfile(authUser: { id: string; email?: string | null; user_metadata?: { name?: string } }) {
+  try {
+    const profile = await getUserById(authUser.id)
+    return {
+      userName: profile.name || authUser.user_metadata?.name || authUser.email || "",
+      userEmail: profile.email || authUser.email || "",
+    }
+  } catch {
+    return {
+      userName: authUser.user_metadata?.name as string || authUser.email || "",
+      userEmail: authUser.email || "",
+    }
+  }
+}
+
 export async function OwnerShell({ children }: { children: React.ReactNode }) {
   const [user, branding] = await Promise.all([getCurrentUser(), getBranding()])
+  const profile = await getUserProfile(user)
   return (
     <DashboardShell
       role="OWNER"
       title="Owner Dashboard"
-      userName={user.user_metadata?.name as string || user.email || ""}
-      userEmail={user.email || ""}
+      userName={profile.userName}
+      userEmail={profile.userEmail}
       brandName={branding.brandName}
       brandLogoUrl={branding.brandLogoUrl}
     >
@@ -40,12 +57,13 @@ export async function OwnerShell({ children }: { children: React.ReactNode }) {
 
 export async function AdminShell({ children }: { children: React.ReactNode }) {
   const [user, branding] = await Promise.all([getCurrentUser(), getBranding()])
+  const profile = await getUserProfile(user)
   return (
     <DashboardShell
       role="ADMIN"
       title="Admin Panel"
-      userName={user.user_metadata?.name as string || user.email || ""}
-      userEmail={user.email || ""}
+      userName={profile.userName}
+      userEmail={profile.userEmail}
       brandName={branding.brandName}
       brandLogoUrl={branding.brandLogoUrl}
     >
@@ -56,12 +74,13 @@ export async function AdminShell({ children }: { children: React.ReactNode }) {
 
 export async function MemberShell({ children }: { children: React.ReactNode }) {
   const [user, branding] = await Promise.all([getCurrentUser(), getBranding()])
+  const profile = await getUserProfile(user)
   return (
     <DashboardShell
       role="MEMBER"
       title="Member Portal"
-      userName={user.user_metadata?.name as string || user.email || ""}
-      userEmail={user.email || ""}
+      userName={profile.userName}
+      userEmail={profile.userEmail}
       brandName={branding.brandName}
       brandLogoUrl={branding.brandLogoUrl}
     >
