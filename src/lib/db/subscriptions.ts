@@ -1,19 +1,28 @@
-import { createAdminSupabaseClient } from "@/lib/supabase-server"
+import { eq, and, lte, gte, desc, count } from "drizzle-orm"
+import { ne } from "drizzle-orm/sql/expressions/conditions"
+import { db } from "@/lib/drizzle"
+import { subscriptions, membership_plans, members, users, invoices } from "@/db/schema"
 
 export async function getActiveSubscription(memberId: string) {
-  const supabase = await createAdminSupabaseClient()
   const today = new Date().toISOString().split("T")[0]
-  const { data } = await supabase
-    .from("subscriptions")
-    .select("*, membership_plans(*)")
-    .eq("member_id", memberId)
-    .eq("status", "ACTIVE")
-    .lte("start_date", today)
-    .gte("end_date", today)
-    .order("start_date", { ascending: false })
+  const rows = await db
+    .select()
+    .from(subscriptions)
+    .innerJoin(membership_plans, eq(subscriptions.plan_id, membership_plans.id))
+    .where(
+      and(
+        eq(subscriptions.member_id, memberId),
+        eq(subscriptions.status, "ACTIVE"),
+        lte(subscriptions.start_date, today),
+        gte(subscriptions.end_date, today),
+      ),
+    )
+    .orderBy(desc(subscriptions.start_date))
     .limit(1)
-    .maybeSingle()
-  return data
+
+  if (rows.length === 0) return null
+  const row = rows[0]
+  return { ...row.subscriptions, membership_plans: row.membership_plans }
 }
 
 export async function createSubscription(input: {
@@ -23,10 +32,9 @@ export async function createSubscription(input: {
   startDate: string
   endDate: string
 }) {
-  const supabase = await createAdminSupabaseClient()
-  const { data, error } = await supabase
-    .from("subscriptions")
-    .insert({
+  const [data] = await db
+    .insert(subscriptions)
+    .values({
       member_id: input.memberId,
       plan_id: input.planId,
       invoice_id: input.invoiceId,
@@ -34,62 +42,51 @@ export async function createSubscription(input: {
       end_date: input.endDate,
       status: "PENDING_PAYMENT",
     })
-    .select()
-    .single()
-  if (error) throw error
+    .returning()
   return data
 }
 
 export async function activateSubscription(id: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data: subscription, error: readError } = await supabase
-    .from("subscriptions")
-    .select("id, member_id, membership_plans(code, type, duration_days)")
-    .eq("id", id)
-    .single()
-
-  if (readError) throw readError
-
-  const membershipPlans = subscription.membership_plans as { code?: string | null; type?: string | null; duration_days?: number | null } | Array<{ code?: string | null; type?: string | null; duration_days?: number | null }> | null
-  const plan = Array.isArray(membershipPlans)
-    ? membershipPlans[0]
-    : membershipPlans
-  const today = new Date().toISOString().split("T")[0]
-  const { data: latestActiveSubscription } = await supabase
-    .from("subscriptions")
-    .select("end_date")
-    .eq("member_id", subscription.member_id)
-    .eq("status", "ACTIVE")
-    .gte("end_date", today)
-    .neq("id", id)
-    .order("end_date", { ascending: false })
+  const [subData] = await db
+    .select()
+    .from(subscriptions)
+    .innerJoin(membership_plans, eq(subscriptions.plan_id, membership_plans.id))
+    .where(eq(subscriptions.id, id))
     .limit(1)
-    .maybeSingle()
-  const startDate = latestActiveSubscription?.end_date || today
-  const endDate = addDaysFromDateString(startDate, Number(plan?.duration_days || 30))
-  const memberType = plan?.code === "DAILY_PASS" || plan?.type === "DAILY" ? "DAILY" : "PREMIUM"
 
-  const { error } = await supabase
-    .from("subscriptions")
-    .update({
-      status: "ACTIVE",
-      start_date: startDate,
-      end_date: endDate,
-    })
-    .eq("id", id)
+  if (!subData) throw new Error("Subscription not found")
+  const { subscriptions: sub, membership_plans: plan } = subData
+  const today = new Date().toISOString().split("T")[0]
 
-  if (error) throw error
+  const [latestActive] = await db
+    .select({ end_date: subscriptions.end_date })
+    .from(subscriptions)
+    .where(
+      and(
+        eq(subscriptions.member_id, sub.member_id),
+        eq(subscriptions.status, "ACTIVE"),
+        gte(subscriptions.end_date, today),
+        ne(subscriptions.id, id),
+      ),
+    )
+    .orderBy(desc(subscriptions.end_date))
+    .limit(1)
 
-  const { error: memberError } = await supabase
-    .from("members")
-    .update({
-      status: "ACTIVE",
-      member_type: memberType,
-    })
-    .eq("id", subscription.member_id)
+  const startDate = latestActive?.end_date || today
+  const endDate = addDaysFromDateString(startDate, Number(plan.duration_days || 30))
+  const memberType = plan.code === "DAILY_PASS" || plan.type === "DAILY" ? "DAILY" : "PREMIUM"
 
-  if (memberError) throw memberError
-  return subscription
+  await db
+    .update(subscriptions)
+    .set({ status: "ACTIVE", start_date: startDate, end_date: endDate })
+    .where(eq(subscriptions.id, id))
+
+  await db
+    .update(members)
+    .set({ status: "ACTIVE", member_type: memberType as any })
+    .where(eq(members.id, sub.member_id))
+
+  return sub
 }
 
 function addDays(date: Date, days: number) {
@@ -103,89 +100,90 @@ function addDaysFromDateString(date: string, days: number) {
 }
 
 export async function activateSubscriptionForInvoice(invoiceId: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data: subscription } = await supabase
-    .from("subscriptions")
-    .select("id")
-    .eq("invoice_id", invoiceId)
-    .order("created_at", { ascending: false })
+  const [existing] = await db
+    .select({ id: subscriptions.id })
+    .from(subscriptions)
+    .where(eq(subscriptions.invoice_id, invoiceId))
+    .orderBy(desc(subscriptions.created_at))
     .limit(1)
-    .maybeSingle()
 
-  if (subscription) return activateSubscription(subscription.id)
+  if (existing) return activateSubscription(existing.id)
 
-  const { data: invoice, error: invoiceError } = await supabase
-    .from("invoices")
-    .select("member_id, plan_id, membership_plans(duration_days)")
-    .eq("id", invoiceId)
-    .single()
+  const [invoiceData] = await db
+    .select()
+    .from(invoices)
+    .innerJoin(membership_plans, eq(invoices.plan_id, membership_plans.id))
+    .where(eq(invoices.id, invoiceId))
+    .limit(1)
 
-  if (invoiceError || !invoice) return null
-
-  const membershipPlans = invoice.membership_plans as { duration_days?: number | null } | Array<{ duration_days?: number | null }> | null
-  const durationDays = Array.isArray(membershipPlans)
-    ? membershipPlans[0]?.duration_days
-    : membershipPlans?.duration_days
+  if (!invoiceData) return null
+  const { invoices: inv, membership_plans: plan } = invoiceData
   const startDate = new Date().toISOString().split("T")[0]
+  const durationDays = Number(plan.duration_days || 30)
 
-  const { data: createdSubscription, error: createError } = await supabase
-    .from("subscriptions")
-    .insert({
-      member_id: invoice.member_id,
-      plan_id: invoice.plan_id,
+  const [created] = await db
+    .insert(subscriptions)
+    .values({
+      member_id: inv.member_id,
+      plan_id: inv.plan_id,
       invoice_id: invoiceId,
       start_date: startDate,
-      end_date: addDays(new Date(), Number(durationDays || 30)),
+      end_date: addDays(new Date(), durationDays),
       status: "ACTIVE",
     })
-    .select("id")
-    .single()
+    .returning({ id: subscriptions.id })
 
-  if (createError || !createdSubscription) throw createError
-  return activateSubscription(createdSubscription.id)
+  if (!created) throw new Error("Failed to create subscription")
+  return activateSubscription(created.id)
 }
 
 export async function updateSubscriptionStatusForInvoice(invoiceId: string, status: "PENDING_PAYMENT" | "EXPIRED" | "CANCELLED") {
-  const supabase = await createAdminSupabaseClient()
-  const { error } = await supabase
-    .from("subscriptions")
-    .update({ status })
-    .eq("invoice_id", invoiceId)
-    .neq("status", "ACTIVE")
-
-  if (error) throw error
+  await db
+    .update(subscriptions)
+    .set({ status })
+    .where(and(eq(subscriptions.invoice_id, invoiceId), ne(subscriptions.status, "ACTIVE")))
 }
 
 export async function getMemberSubscriptions(memberId: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase
-    .from("subscriptions")
-    .select("*, membership_plans(name, code)")
-    .eq("member_id", memberId)
-    .order("created_at", { ascending: false })
-  return data || []
+  const rows = await db
+    .select()
+    .from(subscriptions)
+    .innerJoin(membership_plans, eq(subscriptions.plan_id, membership_plans.id))
+    .where(eq(subscriptions.member_id, memberId))
+    .orderBy(desc(subscriptions.created_at))
+
+  return rows.map((row) => ({
+    ...row.subscriptions,
+    membership_plans: { name: row.membership_plans.name, code: row.membership_plans.code },
+  }))
 }
 
 export async function getActiveSubscriptionCount() {
-  const supabase = await createAdminSupabaseClient()
-  const { count } = await supabase
-    .from("subscriptions")
-    .select("*", { count: "exact", head: true })
-    .eq("status", "ACTIVE")
-  return count || 0
+  const [result] = await db
+    .select({ value: count() })
+    .from(subscriptions)
+    .where(eq(subscriptions.status, "ACTIVE"))
+  return result?.value ?? 0
 }
 
 export async function getExpiringSubscriptions(days = 7) {
-  const supabase = await createAdminSupabaseClient()
   const today = new Date()
   const future = new Date(today.getTime() + days * 86400000).toISOString().split("T")[0]
-  const { data } = await supabase
-    .from("subscriptions")
-    .select("*, members(users(name)), membership_plans(name)")
-    .eq("status", "ACTIVE")
-    .lte("end_date", future)
-    .order("end_date")
-  return data || []
+
+  const rows = await db
+    .select()
+    .from(subscriptions)
+    .innerJoin(members, eq(subscriptions.member_id, members.id))
+    .innerJoin(users, eq(members.user_id, users.id))
+    .innerJoin(membership_plans, eq(subscriptions.plan_id, membership_plans.id))
+    .where(and(eq(subscriptions.status, "ACTIVE"), lte(subscriptions.end_date, future)))
+    .orderBy(subscriptions.end_date)
+
+  return rows.map((row) => ({
+    ...row.subscriptions,
+    members: row.members ? { users: { name: row.users?.name } } : null,
+    membership_plans: { name: row.membership_plans.name },
+  }))
 }
 
 export function getSubscriptionExpiryInfo(subscription: { end_date: string } | null) {
@@ -204,17 +202,26 @@ export function getSubscriptionExpiryInfo(subscription: { end_date: string } | n
 }
 
 export async function getCurrentAndUpcomingSubscriptions(memberId: string) {
-  const supabase = await createAdminSupabaseClient()
   const today = new Date().toISOString().split("T")[0]
-  const { data: all } = await supabase
-    .from("subscriptions")
-    .select("*, membership_plans(name, code, duration_days)")
-    .eq("member_id", memberId)
-    .eq("status", "ACTIVE")
-    .order("start_date", { ascending: true })
 
-  const current = (all || []).find((s) => s.start_date <= today && s.end_date >= today) || null
-  const upcoming = (all || []).filter((s) => s.start_date > today)
+  const rows = await db
+    .select()
+    .from(subscriptions)
+    .innerJoin(membership_plans, eq(subscriptions.plan_id, membership_plans.id))
+    .where(and(eq(subscriptions.member_id, memberId), eq(subscriptions.status, "ACTIVE")))
+    .orderBy(subscriptions.start_date)
+
+  const mapped = rows.map((row) => ({
+    ...row.subscriptions,
+    membership_plans: {
+      name: row.membership_plans.name,
+      code: row.membership_plans.code,
+      duration_days: row.membership_plans.duration_days,
+    },
+  }))
+
+  const current = mapped.find((s) => s.start_date <= today && s.end_date >= today) || null
+  const upcoming = mapped.filter((s) => s.start_date > today)
   return { current, upcoming }
 }
 

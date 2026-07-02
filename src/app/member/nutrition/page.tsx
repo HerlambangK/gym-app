@@ -3,6 +3,7 @@ import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { NutritionForm } from "@/components/member/nutrition-form"
 import { getMemberByUserId } from "@/lib/db/members"
 import { getNutritionLogs, getNutritionTarget } from "@/lib/db/nutrition"
+import { isFitnessProfileIncomplete } from "@/lib/member-fitness-profile"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 
 export default async function Page() {
@@ -22,11 +23,16 @@ export default async function Page() {
     <div className="space-y-6">
       <DashboardPageHeader
         eyebrow="Nutrition"
-        status="Plus / Pro"
-        title="Target Nutrisi"
-        description="Pantau makanan, kalori masuk, target BMI, target berat, dan target kalori harian dalam satu layar."
+        status="Diary + Smart Target"
+        title="Nutrition Coach"
+        description="Onboarding target, food diary per waktu makan, rekomendasi menu lokal Indonesia, dan progress kalori/makro harian."
       />
-      <NutritionForm today={today} logs={logs} target={target} />
+      <NutritionForm
+        today={today}
+        logs={logs}
+        target={target}
+        profileIncomplete={isFitnessProfileIncomplete(target)}
+      />
     </div>
   )
 }

@@ -1,83 +1,116 @@
-import { createAdminSupabaseClient } from "@/lib/supabase-server"
+import { eq, and, desc, inArray, gte, isNotNull } from "drizzle-orm"
+import { db } from "@/lib/drizzle"
+import { invoices, members, users, membership_plans, payments } from "@/db/schema"
 
 export async function createInvoice(input: {
   memberId: string
   planId: string
   amount: number
 }) {
-  const supabase = await createAdminSupabaseClient()
   const invoiceNumber = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString(36).toUpperCase()}`
-  const { data, error } = await supabase
-    .from("invoices")
-    .insert({
+  const [data] = await db
+    .insert(invoices)
+    .values({
       invoice_number: invoiceNumber,
       member_id: input.memberId,
       plan_id: input.planId,
       amount: input.amount,
       status: "PENDING",
     })
-    .select()
-    .single()
-  if (error) throw error
+    .returning()
   return data
 }
 
 export async function getInvoiceByNumber(number: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase.from("invoices").select("*, members(*), membership_plans(*)").eq("invoice_number", number).single()
-  return data
+  const rows = await db
+    .select()
+    .from(invoices)
+    .innerJoin(members, eq(invoices.member_id, members.id))
+    .innerJoin(membership_plans, eq(invoices.plan_id, membership_plans.id))
+    .where(eq(invoices.invoice_number, number))
+    .limit(1)
+
+  if (rows.length === 0) return null
+  const row = rows[0]
+  return { ...row.invoices, members: row.members, membership_plans: row.membership_plans }
 }
 
 export async function getMemberInvoices(memberId: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase
-    .from("invoices")
-    .select("*, membership_plans(name, code, duration_days), payments(status, method, raw_callback)")
-    .eq("member_id", memberId)
-    .order("created_at", { ascending: false })
-  return data || []
+  const rows = await db
+    .select()
+    .from(invoices)
+    .innerJoin(membership_plans, eq(invoices.plan_id, membership_plans.id))
+    .leftJoin(payments, eq(invoices.id, payments.invoice_id))
+    .where(eq(invoices.member_id, memberId))
+    .orderBy(desc(invoices.created_at))
+
+  return rows.map((row) => ({
+    ...row.invoices,
+    membership_plans: {
+      name: row.membership_plans.name,
+      code: row.membership_plans.code,
+      duration_days: row.membership_plans.duration_days,
+    },
+    payments: row.payments
+      ? { status: row.payments.status, method: row.payments.method, raw_callback: row.payments.raw_callback }
+      : null,
+  }))
 }
 
 export async function getAllInvoices(options?: { limit?: number; offset?: number; status?: string }) {
-  const supabase = await createAdminSupabaseClient()
-  let query = supabase
-    .from("invoices")
-    .select("id, invoice_number, amount, status, created_at, members(users(name)), membership_plans(name)")
-    .order("created_at", { ascending: false })
+  const conditions = [isNotNull(invoices.id)]
+  if (options?.status) conditions.push(eq(invoices.status, options.status as any))
 
-  if (options?.status) query = query.eq("status", options.status)
-  if (options?.limit) query = query.limit(options.limit)
-  if (options?.offset) query = query.range(options.offset, (options.offset || 0) + (options.limit || 50) - 1)
+  const query = db
+    .select()
+    .from(invoices)
+    .innerJoin(members, eq(invoices.member_id, members.id))
+    .innerJoin(users, eq(members.user_id, users.id))
+    .innerJoin(membership_plans, eq(invoices.plan_id, membership_plans.id))
+    .where(and(...conditions))
+    .orderBy(desc(invoices.created_at))
 
-  const { data } = await query
-  return data || []
+  const rows = options?.limit
+    ? await query.limit(options.limit).offset(options?.offset ?? 0)
+    : await query
+
+  return rows.map((row) => ({
+    id: row.invoices.id,
+    invoice_number: row.invoices.invoice_number,
+    amount: row.invoices.amount,
+    status: row.invoices.status,
+    created_at: row.invoices.created_at,
+    members: { users: { name: row.users.name } },
+    membership_plans: { name: row.membership_plans.name },
+  }))
 }
 
 export async function updateInvoiceStatus(id: string, status: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { error } = await supabase.from("invoices").update({ status }).eq("id", id)
-  if (error) throw error
+  await db.update(invoices).set({ status: status as any }).where(eq(invoices.id, id))
 }
 
 export async function getInvoiceStats() {
-  const supabase = await createAdminSupabaseClient()
   const startOfMonth = new Date()
   startOfMonth.setDate(1)
   startOfMonth.setHours(0, 0, 0, 0)
 
-  const { data } = await supabase
-    .from("invoices")
-    .select("amount, status")
-    .in("status", ["PAID", "PENDING"])
-    .gte("created_at", startOfMonth.toISOString())
+  const data = await db
+    .select({ amount: invoices.amount, status: invoices.status })
+    .from(invoices)
+    .where(
+      and(
+        inArray(invoices.status, ["PAID", "PENDING"] as any),
+        gte(invoices.created_at, startOfMonth.toISOString()),
+      ),
+    )
 
-  const paidInvoices = data?.filter((invoice) => invoice.status === "PAID") || []
-  const pendingInvoices = data?.filter((invoice) => invoice.status === "PENDING") || []
+  const paidInvoices = data.filter((inv) => inv.status === "PAID")
+  const pendingInvoices = data.filter((inv) => inv.status === "PENDING")
 
-  const totalRevenue = paidInvoices?.reduce((sum, inv) => sum + Number(inv.amount), 0) || 0
+  const totalRevenue = paidInvoices.reduce((sum, inv) => sum + Number(inv.amount), 0)
   return {
     totalRevenue,
-    paidCount: paidInvoices?.length || 0,
-    pendingCount: pendingInvoices?.length || 0,
+    paidCount: paidInvoices.length,
+    pendingCount: pendingInvoices.length,
   }
 }

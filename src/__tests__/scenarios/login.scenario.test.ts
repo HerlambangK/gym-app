@@ -5,6 +5,7 @@ jest.mock("@/lib/supabase-server", () => ({
 
 import { loginAction } from "@/lib/auth";
 import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/supabase-server";
+import * as usersDb from "@/lib/db/users";
 
 function formData(values: Record<string, string>): FormData {
   const fd = new FormData();
@@ -23,7 +24,7 @@ function setupMocks(options: {
       : {
           data: {
             user: {
-              id: "user-123",
+              id: "00000000-0000-0000-0000-000000000001",
               email_confirmed_at: options.emailConfirmed !== false ? "2026-01-01" : null,
             },
             session: { access_token: "token" },
@@ -32,6 +33,10 @@ function setupMocks(options: {
         },
   );
   const signOut = jest.fn().mockResolvedValue({ error: null });
+
+  jest.spyOn(usersDb, "getUserRoleOrAssignDefault").mockResolvedValue(
+    (options.role as any) || "MEMBER",
+  );
   const maybeSingle = jest.fn().mockResolvedValue(
     options.role ? { data: { roles: { code: options.role } } } : { data: null },
   );
@@ -40,6 +45,11 @@ function setupMocks(options: {
       single: jest.fn().mockResolvedValue({ data: { id: "role-id", code: "MEMBER" }, error: null }),
     }),
     error: null,
+  });
+  const insert = jest.fn().mockReturnValue({
+    select: jest.fn().mockReturnValue({
+      single: jest.fn().mockResolvedValue({ data: { id: "member-id" }, error: null }),
+    }),
   });
 
   (createServerSupabaseClient as jest.Mock).mockResolvedValue({
@@ -58,6 +68,7 @@ function setupMocks(options: {
 
   (createAdminSupabaseClient as jest.Mock).mockResolvedValue({
     from: jest.fn().mockReturnValue({
+      insert,
       upsert,
       select: jest.fn().mockReturnThis(),
       eq: jest.fn().mockReturnThis(),

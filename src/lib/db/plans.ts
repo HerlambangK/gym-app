@@ -1,27 +1,40 @@
-import { createAdminSupabaseClient } from "@/lib/supabase-server"
+import { eq, asc } from "drizzle-orm"
+import { db } from "@/lib/drizzle"
+import { membership_plans } from "@/db/schema"
 
 export async function getPlans() {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase.from("membership_plans").select("*").eq("is_active", true).order("price")
-  return data || []
+  const data = await db
+    .select()
+    .from(membership_plans)
+    .where(eq(membership_plans.is_active, true))
+    .orderBy(asc(membership_plans.price))
+  return data
 }
 
 export async function getAllPlans() {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase.from("membership_plans").select("*").order("price")
-  return data || []
+  const data = await db
+    .select()
+    .from(membership_plans)
+    .orderBy(asc(membership_plans.price))
+  return data
 }
 
 export async function getPlanByCode(code: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase.from("membership_plans").select("*").eq("code", code).single()
-  return data
+  const [data] = await db
+    .select()
+    .from(membership_plans)
+    .where(eq(membership_plans.code, code))
+    .limit(1)
+  return data || null
 }
 
 export async function getPlanById(id: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase.from("membership_plans").select("*").eq("id", id).single()
-  return data
+  const [data] = await db
+    .select()
+    .from(membership_plans)
+    .where(eq(membership_plans.id, id))
+    .limit(1)
+  return data || null
 }
 
 export async function upsertPlan(input: {
@@ -34,35 +47,38 @@ export async function upsertPlan(input: {
   description?: string
   isActive: boolean
 }) {
-  const supabase = await createAdminSupabaseClient()
-  const payload = {
-    ...(input.id ? { id: input.id } : {}),
+  const now = new Date().toISOString()
+  const values = {
     name: input.name,
     code: input.code,
-    type: input.type,
+    type: input.type as any,
     duration_days: input.durationDays,
     price: input.price,
     description: input.description || null,
     is_active: input.isActive,
-    updated_at: new Date().toISOString(),
+    updated_at: now,
   }
 
-  const { data, error } = await supabase
-    .from("membership_plans")
-    .upsert(payload, { onConflict: input.id ? "id" : "code" })
-    .select()
-    .single()
+  if (input.id) {
+    const [data] = await db
+      .update(membership_plans)
+      .set({ ...values, id: input.id })
+      .where(eq(membership_plans.id, input.id))
+      .returning()
+    return data
+  }
 
-  if (error) throw error
+  const [data] = await db
+    .insert(membership_plans)
+    .values(values)
+    .onConflictDoUpdate({ target: membership_plans.code, set: values })
+    .returning()
   return data
 }
 
 export async function setPlanActive(id: string, isActive: boolean) {
-  const supabase = await createAdminSupabaseClient()
-  const { error } = await supabase
-    .from("membership_plans")
-    .update({ is_active: isActive, updated_at: new Date().toISOString() })
-    .eq("id", id)
-
-  if (error) throw error
+  await db
+    .update(membership_plans)
+    .set({ is_active: isActive, updated_at: new Date().toISOString() })
+    .where(eq(membership_plans.id, id))
 }

@@ -1,4 +1,6 @@
-import { createAdminSupabaseClient } from "@/lib/supabase-server"
+import { eq } from "drizzle-orm"
+import { db } from "@/lib/drizzle"
+import { payments } from "@/db/schema"
 
 export async function createPayment(input: {
   invoiceId: string
@@ -7,37 +9,35 @@ export async function createPayment(input: {
   amount: number
   method?: string
 }) {
-  const supabase = await createAdminSupabaseClient()
-  const { data, error } = await supabase
-    .from("payments")
-    .insert({
+  const [data] = await db
+    .insert(payments)
+    .values({
       invoice_id: input.invoiceId,
       provider: input.provider,
       provider_order_id: input.providerOrderId,
-      method: input.method,
+      method: input.method || null,
       amount: input.amount,
       status: "PENDING",
     })
-    .select()
-    .single()
-  if (error) throw error
+    .returning()
   return data
 }
 
 export async function getPaymentByOrderId(orderId: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase.from("payments").select("*").eq("provider_order_id", orderId).single()
-  return data
+  const [data] = await db
+    .select()
+    .from(payments)
+    .where(eq(payments.provider_order_id, orderId))
+    .limit(1)
+  return data || null
 }
 
 export async function updatePaymentStatus(id: string, status: string, transactionId?: string, rawCallback?: unknown) {
-  const supabase = await createAdminSupabaseClient()
   const update: Record<string, unknown> = { status }
   if (transactionId) update.provider_transaction_id = transactionId
   if (rawCallback) update.raw_callback = rawCallback
   if (status === "PAID" || status === "settlement") {
     update.paid_at = new Date().toISOString()
   }
-  const { error } = await supabase.from("payments").update(update).eq("id", id)
-  if (error) throw error
+  await db.update(payments).set(update).where(eq(payments.id, id))
 }

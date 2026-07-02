@@ -1,4 +1,6 @@
-import { createAdminSupabaseClient } from "@/lib/supabase-server"
+import { eq, asc } from "drizzle-orm"
+import { db } from "@/lib/drizzle"
+import { features, plan_features } from "@/db/schema"
 
 export type FeatureRow = {
   id: string
@@ -11,28 +13,24 @@ export type FeatureRow = {
 }
 
 export async function getFeatures() {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase
-    .from("features")
-    .select("id, code, name, description, category, is_premium, is_active")
-    .order("category")
+  const data = await db
+    .select()
+    .from(features)
+    .orderBy(asc(features.category))
 
-  return (data || []) as FeatureRow[]
+  return data as FeatureRow[]
 }
 
 export async function getPlanFeatures(planId: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase
-    .from("plan_features")
-    .select("features(code)")
-    .eq("plan_id", planId)
-    .eq("is_enabled", true)
+  const rows = await db
+    .select({ code: features.code })
+    .from(plan_features)
+    .innerJoin(features, eq(plan_features.feature_id, features.id))
+    .where(eq(plan_features.plan_id, planId))
 
-  return (data as unknown as Array<{ features: { code: string } }>)?.map((pf) => pf.features.code) || []
+  return rows.map((r) => r.code)
 }
 
 export async function toggleFeature(featureId: string, isActive: boolean) {
-  const supabase = await createAdminSupabaseClient()
-  const { error } = await supabase.from("features").update({ is_active: isActive }).eq("id", featureId)
-  if (error) throw error
+  await db.update(features).set({ is_active: isActive }).where(eq(features.id, featureId))
 }

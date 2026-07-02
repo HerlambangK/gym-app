@@ -4,6 +4,7 @@ import crypto from "node:crypto"
 import { redirect } from "next/navigation"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { canAccessDashboardPath, getDashboardPathForRole } from "@/lib/auth-routing"
+import { createMember } from "@/lib/db/members"
 import { ensureUserRole, getUserRoleOrAssignDefault, upsertUserProfile } from "@/lib/db/users"
 
 export type ActionResult = { error?: string; redirectTo?: string; cooldown?: boolean }
@@ -20,6 +21,18 @@ function validateEmail(email: string) {
 
 function validatePhone(phone: string) {
   return phone === "" || /^[+]?[\d\s()-]{8,20}$/.test(phone)
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) {
+    const cause = (error as any).cause
+    return error.message + (cause ? ` (cause: ${JSON.stringify(cause)})` : "")
+  }
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message
+    if (typeof message === "string") return message
+  }
+  return "Unknown database error"
 }
 
 export async function registerAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -75,8 +88,10 @@ export async function registerAction(_prev: ActionResult | null, formData: FormD
       passwordHash,
     })
     await ensureUserRole(authData.user.id, "MEMBER")
+    await createMember(authData.user.id, "TRIAL")
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown database error"
+    const message = getErrorMessage(error)
+    console.error("registerAction profile/role/member error:", error)
     if (message.includes("already exists") || message.includes("duplicate")) {
       return { error: "Email sudah terdaftar. Silakan cek email untuk verifikasi.", cooldown: true }
     }
@@ -130,11 +145,19 @@ export async function loginAction(_prev: ActionResult | null, formData: FormData
       phone: (data.user.user_metadata?.phone as string | undefined) || null,
     })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown database error"
+    const message = getErrorMessage(error)
     return { error: `Login berhasil, tetapi profil aplikasi gagal disiapkan: ${message}` }
   }
 
   const role = await getUserRoleOrAssignDefault(userId, "MEMBER")
+  if (role === "MEMBER") {
+    try {
+      await createMember(userId, "TRIAL")
+    } catch (error) {
+      const message = getErrorMessage(error)
+      return { error: `Login berhasil, tetapi profil member gagal disiapkan: ${message}` }
+    }
+  }
 
   const safeNextPath = nextPath?.startsWith("/") && !nextPath.startsWith("//") ? nextPath : null
   const redirectTo = safeNextPath && canAccessDashboardPath(safeNextPath, role)

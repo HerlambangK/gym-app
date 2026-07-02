@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { ProfileForm } from "@/components/member/profile-form"
 import { getMemberByUserId } from "@/lib/db/members"
+import { getNutritionTarget } from "@/lib/db/nutrition"
 import { getUserById } from "@/lib/db/users"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 
@@ -16,6 +17,7 @@ export default async function Page() {
     getUserById(user.id).catch(() => null),
     getMemberByUserId(user.id),
   ])
+  const target = member ? await getNutritionTarget(member.id).catch(() => null) : null
 
   return (
     <div className="space-y-6">
@@ -28,6 +30,7 @@ export default async function Page() {
       <ProfileForm
         profile={profile}
         member={member}
+        target={target}
         email={user.email || ""}
         verified={Boolean(user.email_confirmed_at)}
       />

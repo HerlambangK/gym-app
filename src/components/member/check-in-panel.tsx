@@ -36,7 +36,7 @@ export function CheckInPanel({
         : "Ready for check-in",
   )
   const startTimeRef = useRef<number>(
-    initialActiveSession ? new Date(initialActiveSession.check_in_time).getTime() : Date.now(),
+    initialActiveSession ? new Date(initialActiveSession.check_in_time).getTime() : 0,
   )
   const [durationSec, setDurationSec] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -48,7 +48,9 @@ export function CheckInPanel({
   const [addressInfo, setAddressInfo] = useState<{ displayName: string; road: string; city: string } | null>(null)
   const [locationAttempted, setLocationAttempted] = useState(isAdminMode)
   const [permissionState, setPermissionState] = useState<PermissionState | "unavailable">("unavailable")
-  const [permissionInitialized, setPermissionInitialized] = useState(false)
+  const [permissionInitialized, setPermissionInitialized] = useState(
+    isAdminMode || typeof navigator === "undefined" || !("permissions" in navigator),
+  )
 
   const requestLocationRef = useRef<((useHighAccuracy?: boolean, attempt?: number) => void) | null>(null)
 
@@ -133,8 +135,6 @@ export function CheckInPanel({
 
   useEffect(() => {
     if (isAdminMode || !("permissions" in navigator)) {
-      setPermissionState("unavailable")
-      setPermissionInitialized(true)
       return
     }
     navigator.permissions.query({ name: "geolocation" }).then((status) => {
@@ -279,7 +279,7 @@ export function CheckInPanel({
               <DialogDescription>
                 {permissionState === "denied"
                   ? "Akses lokasi untuk situs ini telah ditolak di pengaturan browser. Aktifkan melalui ikon gembok di address bar, lalu nyalakan izin Lokasi."
-                  : "Untuk melakukan check-in, kami memerlukan akses ke lokasi perangkat Anda. Lokasi hanya digunakan saat check-in dan tidak disimpan."}
+                  : "Untuk melakukan check-in, kami memerlukan lokasi perangkat Anda. Koordinat check-in disimpan sebagai bukti attendance dan validasi radius gym."}
               </DialogDescription>
             </DialogHeader>
             <div className="flex flex-col gap-4">

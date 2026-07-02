@@ -1,19 +1,24 @@
-import { createAdminSupabaseClient } from "@/lib/supabase-server"
+import { eq } from "drizzle-orm"
+import { db } from "@/lib/drizzle"
+import { branding_settings } from "@/db/schema"
 
 export async function getBrandingSettings() {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase.from("branding_settings").select("*").limit(1).single()
-  return data
+  const [data] = await db.select().from(branding_settings).limit(1)
+  return data || null
 }
 
 export async function updateBrandingSettings(settings: Record<string, unknown>) {
-  const supabase = await createAdminSupabaseClient()
   const existing = await getBrandingSettings()
+  const now = new Date().toISOString()
+
   if (existing) {
-    const { error } = await supabase.from("branding_settings").update(settings).eq("id", existing.id)
-    if (error) throw error
+    await db
+      .update(branding_settings)
+      .set({ ...settings, updated_at: now })
+      .where(eq(branding_settings.id, existing.id))
   } else {
-    const { error } = await supabase.from("branding_settings").insert(settings)
-    if (error) throw error
+    await db
+      .insert(branding_settings)
+      .values(settings as any)
   }
 }

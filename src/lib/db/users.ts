@@ -1,4 +1,6 @@
-import { createAdminSupabaseClient } from "@/lib/supabase-server"
+import { eq, or, and } from "drizzle-orm"
+import { db } from "@/lib/drizzle"
+import { users, roles, user_roles, role_permissions, permissions } from "@/db/schema"
 import { extractRoleCode } from "@/lib/auth-routing"
 import type { RoleCode } from "@/types/domain"
 
@@ -21,16 +23,14 @@ type UserProfileInput = {
 }
 
 export async function getUserById(id: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data, error } = await supabase.from("users").select("*").eq("id", id).single()
-  if (error) throw error
+  const [data] = await db.select().from(users).where(eq(users.id, id)).limit(1)
+  if (!data) throw new Error("User not found")
   return data
 }
 
 export async function getUserByEmail(email: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase.from("users").select("*").eq("email", email).single()
-  return data
+  const [data] = await db.select().from(users).where(eq(users.email, email)).limit(1)
+  return data || null
 }
 
 export async function createUserProfile(userId: string, name: string, email: string, phone?: string) {
@@ -38,35 +38,46 @@ export async function createUserProfile(userId: string, name: string, email: str
 }
 
 export async function upsertUserProfile(input: UserProfileInput) {
-  const supabase = await createAdminSupabaseClient()
-  const { error } = await supabase.from("users").upsert({
-    id: input.id,
-    name: input.name,
-    email: input.email,
-    phone: input.phone || null,
-    ...(input.passwordHash ? { password_hash: input.passwordHash } : {}),
-  }, {
-    onConflict: "id",
-  })
-  if (error) throw error
+  const now = new Date().toISOString()
+  await db
+    .insert(users)
+    .values({
+      id: input.id,
+      name: input.name,
+      email: input.email,
+      phone: input.phone || null,
+      password_hash: input.passwordHash || null,
+      updated_at: now,
+    })
+    .onConflictDoUpdate({
+      target: users.id,
+      set: {
+        name: input.name,
+        email: input.email,
+        phone: input.phone || null,
+        ...(input.passwordHash ? { password_hash: input.passwordHash } : {}),
+        updated_at: now,
+      },
+    })
 }
 
 export async function ensureRole(roleCode: RoleCode) {
-  const supabase = await createAdminSupabaseClient()
   const seed = roleSeed[roleCode]
-  const { data, error } = await supabase
-    .from("roles")
-    .upsert({
+  const now = new Date().toISOString()
+  const [data] = await db
+    .insert(roles)
+    .values({
       code: roleCode,
       name: seed.name,
       description: seed.description,
-    }, {
-      onConflict: "code",
+      updated_at: now,
     })
-    .select("id, code")
-    .single()
+    .onConflictDoUpdate({
+      target: roles.code,
+      set: { name: seed.name, description: seed.description, updated_at: now },
+    })
+    .returning({ id: roles.id, code: roles.code })
 
-  if (error) throw error
   return data
 }
 
@@ -75,33 +86,24 @@ export async function assignRole(userId: string, roleCode: string) {
 }
 
 export async function ensureUserRole(userId: string, roleCode: RoleCode) {
-  const supabase = await createAdminSupabaseClient()
   const role = await ensureRole(roleCode)
-  const { error } = await supabase.from("user_roles").upsert({
-    user_id: userId,
-    role_id: role.id,
-  }, {
-    onConflict: "user_id,role_id",
-  })
-
-  if (error) throw error
+  await db
+    .insert(user_roles)
+    .values({ user_id: userId, role_id: role.id })
+    .onConflictDoNothing()
   return roleCode
 }
 
 export async function getUserRole(userId: string): Promise<string | null> {
-  const supabase = await createAdminSupabaseClient()
-  const { data, error } = await supabase
-    .from("user_roles")
-    .select("roles(code)")
-    .eq("user_id", userId)
-    .maybeSingle()
+  const [data] = await db
+    .select({ code: roles.code })
+    .from(user_roles)
+    .innerJoin(roles, eq(user_roles.role_id, roles.id))
+    .where(eq(user_roles.user_id, userId))
+    .limit(1)
 
-  if (error) {
-    console.error("Failed to resolve user role:", error.message)
-    return null
-  }
-
-  return extractRoleCode(data)
+  if (!data) return null
+  return extractRoleCode({ roles: data })
 }
 
 export async function getUserRoleOrAssignDefault(userId: string, defaultRole: RoleCode = "MEMBER") {
@@ -111,16 +113,13 @@ export async function getUserRoleOrAssignDefault(userId: string, defaultRole: Ro
 }
 
 export async function getUserPermissions(userId: string): Promise<string[]> {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase
-    .from("user_roles")
-    .select("roles(role_permissions(permissions(code)))")
-    .eq("user_id", userId)
-    .single()
+  const rows = await db
+    .select({ code: permissions.code })
+    .from(user_roles)
+    .innerJoin(roles, eq(user_roles.role_id, roles.id))
+    .innerJoin(role_permissions, eq(roles.id, role_permissions.role_id))
+    .innerJoin(permissions, eq(role_permissions.permission_id, permissions.id))
+    .where(eq(user_roles.user_id, userId))
 
-  if (!data) return []
-  const roleData = data as unknown as {
-    roles: { role_permissions: Array<{ permissions: { code: string } }> }
-  }
-  return roleData.roles?.role_permissions?.map((rp) => rp.permissions.code) ?? []
+  return rows.map((r) => r.code)
 }

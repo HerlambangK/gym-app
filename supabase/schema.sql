@@ -251,7 +251,10 @@ create table if not exists public.nutrition_logs (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null references public.members(id),
   log_date date not null,
+  meal_type text,
   food_name text,
+  portion text,
+  eaten_at time,
   weight_kg numeric(6, 2),
   calories integer,
   protein_gram integer,
@@ -260,20 +263,35 @@ create table if not exists public.nutrition_logs (
   water_ml integer,
   notes text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (member_id, log_date)
+  updated_at timestamptz not null default now()
 );
 
 alter table public.nutrition_logs
-  add column if not exists food_name text;
+  add column if not exists food_name text,
+  add column if not exists meal_type text,
+  add column if not exists portion text,
+  add column if not exists eaten_at time;
 
 create table if not exists public.nutrition_targets (
   id uuid primary key default gen_random_uuid(),
   member_id uuid not null references public.members(id) on delete cascade,
+  height_cm numeric(6, 2),
+  age integer,
+  gender text,
+  goal text,
+  activity_level text,
+  allergies text,
+  food_preferences text,
+  daily_food_budget integer,
+  meals_per_day integer,
   target_bmi numeric(5, 2),
   target_calories integer,
   target_weight_kg numeric(6, 2),
   target_protein_gram integer,
+  target_carbs_gram integer,
+  target_fat_gram integer,
+  target_water_ml integer,
+  meal_pattern text,
   notes text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -285,6 +303,12 @@ create table if not exists public.workout_programs (
   member_id uuid not null references public.members(id) on delete cascade,
   title text not null,
   goal text,
+  level text,
+  weekly_sessions integer,
+  session_duration_minutes integer,
+  equipment text,
+  limitations text,
+  preference text,
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

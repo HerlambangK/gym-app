@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { usePathname } from "next/navigation"
-import { Dumbbell, LayoutDashboard, Users, CreditCard, Activity, Settings, ShieldCheck, FileText } from "lucide-react"
+import { Brain, Dumbbell, LayoutDashboard, Users, CreditCard, Activity, Settings, ShieldCheck, FileText } from "lucide-react"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
 import { TeamSwitcher } from "@/components/team-switcher"
@@ -34,6 +34,7 @@ const navByRole: Record<RoleCode, SidebarNavItem[]> = {
     { title: "Overview", url: "/owner/dashboard", icon: <LayoutDashboard /> },
     { title: "Financial", url: "/owner/financial", icon: <CreditCard /> },
     { title: "Members", url: "/owner/members", icon: <Users /> },
+    { title: "Intelligence", url: "/owner/intelligence", icon: <Brain /> },
     { title: "Subscriptions", url: "/owner/subscriptions", icon: <CreditCard /> },
     { title: "Invoices", url: "/owner/invoices", icon: <CreditCard /> },
     { title: "Attendances", url: "/owner/attendances", icon: <Activity /> },

@@ -20,7 +20,7 @@ function setupMocks(options?: {
   const signUp = jest.fn().mockResolvedValue(
     options?.signUpError
       ? { data: { user: null }, error: { message: options.signUpError } }
-      : { data: { user: { id: "user-123" } }, error: null },
+      : { data: { user: { id: "00000000-0000-0000-0000-000000000002" } }, error: null },
   );
   const insert = jest.fn().mockResolvedValue(
     options?.insertError

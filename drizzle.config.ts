@@ -1,0 +1,10 @@
+import { defineConfig } from "drizzle-kit"
+
+export default defineConfig({
+  schema: "./src/db/schema.ts",
+  out: "./supabase/drizzle",
+  dialect: "postgresql",
+  dbCredentials: {
+    url: process.env.SUPABASE_DB_URL || process.env.DATABASE_URL || "",
+  },
+})

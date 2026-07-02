@@ -1,17 +1,21 @@
-import { createAdminSupabaseClient } from "@/lib/supabase-server"
+import { eq, and, isNull, desc, gte, count, lte } from "drizzle-orm"
+import { db } from "@/lib/drizzle"
+import { attendances, branches, members, users } from "@/db/schema"
 
 export async function getActiveSession(memberId: string) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase
-    .from("attendances")
-    .select("*")
-    .eq("member_id", memberId)
-    .eq("status", "CHECKED_IN")
-    .is("check_out_time", null)
-    .order("check_in_time", { ascending: false })
+  const [data] = await db
+    .select()
+    .from(attendances)
+    .where(
+      and(
+        eq(attendances.member_id, memberId),
+        eq(attendances.status, "CHECKED_IN"),
+        isNull(attendances.check_out_time),
+      ),
+    )
+    .orderBy(desc(attendances.check_in_time))
     .limit(1)
-    .maybeSingle()
-  return data
+  return data || null
 }
 
 export async function createCheckIn(input: {
@@ -23,10 +27,9 @@ export async function createCheckIn(input: {
   accuracy: number
   distance: number
 }) {
-  const supabase = await createAdminSupabaseClient()
-  const { data, error } = await supabase
-    .from("attendances")
-    .insert({
+  const [data] = await db
+    .insert(attendances)
+    .values({
       member_id: input.memberId,
       branch_id: input.branchId,
       subscription_id: input.subscriptionId || null,
@@ -36,24 +39,21 @@ export async function createCheckIn(input: {
       distance_meters: input.distance,
       status: "CHECKED_IN",
     })
-    .select()
-    .single()
-  if (error) throw error
+    .returning()
   return data
 }
 
 export async function createCheckOut(attendanceId: string, latitude?: number, longitude?: number, accuracy?: number) {
-  const supabase = await createAdminSupabaseClient()
-  const now = new Date().toISOString()
-  const { data: attendance } = await supabase
-    .from("attendances")
-    .select("check_in_time")
-    .eq("id", attendanceId)
-    .single()
+  const [attendance] = await db
+    .select({ check_in_time: attendances.check_in_time })
+    .from(attendances)
+    .where(eq(attendances.id, attendanceId))
+    .limit(1)
 
   if (!attendance) throw new Error("Attendance not found")
   const checkIn = new Date(attendance.check_in_time)
   const durationMinutes = Math.round((Date.now() - checkIn.getTime()) / 60000)
+  const now = new Date().toISOString()
 
   const update: Record<string, unknown> = {
     check_out_time: now,
@@ -64,38 +64,51 @@ export async function createCheckOut(attendanceId: string, latitude?: number, lo
   if (longitude) update.check_out_longitude = longitude
   if (accuracy) update.check_out_accuracy = accuracy
 
-  const { error } = await supabase.from("attendances").update(update).eq("id", attendanceId)
-  if (error) throw error
+  await db.update(attendances).set(update).where(eq(attendances.id, attendanceId))
   return { durationMinutes, checkedOutAt: now }
 }
 
 export async function getMemberAttendances(memberId: string, limit = 20) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase
-    .from("attendances")
-    .select("*, branches(name)")
-    .eq("member_id", memberId)
-    .order("check_in_time", { ascending: false })
+  const rows = await db
+    .select()
+    .from(attendances)
+    .leftJoin(branches, eq(attendances.branch_id, branches.id))
+    .where(eq(attendances.member_id, memberId))
+    .orderBy(desc(attendances.check_in_time))
     .limit(limit)
-  return data || []
+
+  return rows.map((row) => ({
+    ...row.attendances,
+    branches: row.branches ? { name: row.branches.name } : null,
+  }))
 }
 
 export async function getTodayCheckInCount() {
-  const supabase = await createAdminSupabaseClient()
   const today = new Date().toISOString().split("T")[0]
-  const { count } = await supabase
-    .from("attendances")
-    .select("*", { count: "exact", head: true })
-    .gte("check_in_time", today)
-  return count || 0
+  const [result] = await db
+    .select({ value: count() })
+    .from(attendances)
+    .where(gte(attendances.check_in_time, today))
+  return result?.value ?? 0
 }
 
 export async function getAllAttendances(limit = 50) {
-  const supabase = await createAdminSupabaseClient()
-  const { data } = await supabase
-    .from("attendances")
-    .select("id, check_in_time, check_out_time, duration_minutes, status, members(users(name)), branches(name)")
-    .order("check_in_time", { ascending: false })
+  const rows = await db
+    .select()
+    .from(attendances)
+    .leftJoin(members, eq(attendances.member_id, members.id))
+    .leftJoin(users, eq(members.user_id, users.id))
+    .leftJoin(branches, eq(attendances.branch_id, branches.id))
+    .orderBy(desc(attendances.check_in_time))
     .limit(limit)
-  return data || []
+
+  return rows.map((row) => ({
+    id: row.attendances.id,
+    check_in_time: row.attendances.check_in_time,
+    check_out_time: row.attendances.check_out_time,
+    duration_minutes: row.attendances.duration_minutes,
+    status: row.attendances.status,
+    members: row.members ? { users: { name: row.users?.name } } : null,
+    branches: row.branches ? { name: row.branches.name } : null,
+  }))
 }
