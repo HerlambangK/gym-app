@@ -14,6 +14,7 @@ import { Progress } from "@/components/ui/progress"
 import { redirect } from "next/navigation"
 import { formatDate } from "@/lib/format"
 import { SubscriptionExpiryDialog } from "@/components/member/subscription-expiry-dialog"
+import { WorkoutBodyIntensity, type WorkoutMuscleIntensity } from "@/components/member/workout-body-intensity"
 
 export default async function Page() {
   const supabase = await createServerSupabaseClient()
@@ -39,6 +40,7 @@ export default async function Page() {
   const completedSessions = recentAttendances.filter((item) => item.status === "CHECKED_OUT" || item.status === "AUTO_CHECKED_OUT").length
   const totalMinutes = recentAttendances.reduce((sum, item) => sum + Number(item.duration_minutes || 0), 0)
   const workoutStats = getWorkoutStats(workoutProgram)
+  const workoutIntensity = getWorkoutIntensity(workoutProgram)
 
   return (
     <div className="space-y-6">
@@ -308,6 +310,7 @@ export default async function Page() {
               <CardDescription>{workoutStats.title}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              <WorkoutBodyIntensity data={workoutIntensity} />
               <div className="grid grid-cols-3 gap-2">
                 <MiniWorkoutStat label="Hari" value={String(workoutStats.days)} />
                 <MiniWorkoutStat label="Latihan" value={String(workoutStats.exercises)} />
@@ -334,6 +337,39 @@ export default async function Page() {
   )
 }
 
+const muscleBodyMap: Record<string, string[]> = {
+  Chest: ["chest"],
+  Back: ["upper-back", "trapezius"],
+  Shoulders: ["front-deltoids"],
+  "Rear Shoulders": ["back-deltoids"],
+  Biceps: ["biceps"],
+  Triceps: ["triceps"],
+  Core: ["abs", "obliques"],
+  Quads: ["quadriceps"],
+  "Lower Back": ["lower-back"],
+  Hamstrings: ["hamstring"],
+  Glutes: ["gluteal"],
+  Calves: ["calves"],
+  Cardio: ["quadriceps", "hamstring", "calves"],
+  "Full Body": ["chest", "upper-back", "quadriceps", "hamstring", "abs"],
+}
+
+function getWorkoutIntensity(program: Awaited<ReturnType<typeof getActiveWorkoutProgram>>): WorkoutMuscleIntensity[] {
+  const areaMap = new Map<string, WorkoutMuscleIntensity>()
+  for (const session of program?.workout_sessions ?? []) {
+    for (const exercise of session.workout_exercises ?? []) {
+      const meta = parseWorkoutMeta(exercise.load_note)
+      const label = normalizeMuscleLabel(meta.muscle || exercise.exercise_type || "Full Body")
+      const muscles = muscleBodyMap[label] ?? muscleBodyMap["Full Body"]
+      const current = areaMap.get(label) ?? { label, count: 0, muscles, exercises: [] }
+      current.count += Math.max(1, Number(exercise.sets || 1))
+      if (!current.exercises.includes(exercise.exercise_name)) current.exercises.push(exercise.exercise_name)
+      areaMap.set(label, current)
+    }
+  }
+  return Array.from(areaMap.values()).sort((a, b) => b.count - a.count)
+}
+
 function getWorkoutStats(program: Awaited<ReturnType<typeof getActiveWorkoutProgram>>) {
   const sessions = program?.workout_sessions ?? []
   const exercises = sessions.flatMap((session) => session.workout_exercises ?? [])
@@ -350,6 +386,33 @@ function getWorkoutStats(program: Awaited<ReturnType<typeof getActiveWorkoutProg
     sets: exercises.reduce((sum, exercise) => sum + Number(exercise.sets || 0), 0),
     balance: exercises.length ? Math.min(100, Math.round((muscleCount / 8) * 100)) : 0,
   }
+}
+
+function parseWorkoutMeta(note?: string | null) {
+  if (!note) return { muscle: "" }
+  const values = Object.fromEntries(note.split("|").map((item) => {
+    const [key, ...value] = item.split(":")
+    return [key, value.join(":")]
+  }))
+  return { muscle: values.muscle || "" }
+}
+
+function normalizeMuscleLabel(value: string) {
+  const cleaned = value.trim().toLowerCase()
+  const found = Object.keys(muscleBodyMap).find((label) => label.toLowerCase() === cleaned)
+  if (found) return found
+  if (/quad|leg press|squat|lunge/.test(cleaned)) return "Quads"
+  if (/hamstring|leg curl|romanian/.test(cleaned)) return "Hamstrings"
+  if (/glute|hip thrust/.test(cleaned)) return "Glutes"
+  if (/back|row|pull/.test(cleaned)) return "Back"
+  if (/chest|bench|push/.test(cleaned)) return "Chest"
+  if (/shoulder|press|raise/.test(cleaned)) return "Shoulders"
+  if (/bicep|curl/.test(cleaned)) return "Biceps"
+  if (/tricep|dips/.test(cleaned)) return "Triceps"
+  if (/core|abs|plank|crunch/.test(cleaned)) return "Core"
+  if (/calf|calves/.test(cleaned)) return "Calves"
+  if (/cardio|run|cycling|stair|rowing|hiit/.test(cleaned)) return "Cardio"
+  return "Full Body"
 }
 
 function MiniWorkoutStat({ label, value }: { label: string; value: string }) {
