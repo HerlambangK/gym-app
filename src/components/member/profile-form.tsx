@@ -1,6 +1,7 @@
 "use client"
 
 import { useActionState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Activity, Apple, Dumbbell, UserRound } from "lucide-react"
 import { toast } from "sonner"
 import { saveMemberProfile, type ActionState } from "@/app/actions/member"
@@ -43,14 +44,21 @@ export function ProfileForm({
   verified: boolean
 }) {
   const [state, action, pending] = useActionState(saveMemberProfile, initialState)
+  const router = useRouter()
   const isPremium = member?.member_type === "PREMIUM"
   const workout = parseWorkoutNotes(target?.notes)
 
+  const formKey = JSON.stringify({ name: profile?.name, phone: profile?.phone, target })
+
   useEffect(() => {
     if (!state.message) return
-    if (state.ok) toast.success(state.message)
-    else toast.error(state.message)
-  }, [state])
+    if (state.ok) {
+      toast.success(state.message)
+      router.refresh()
+    } else {
+      toast.error(state.message)
+    }
+  }, [state, router])
 
   return (
     <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
@@ -99,7 +107,7 @@ export function ProfileForm({
           <CardDescription>Isi sekali di sini. Nutrition dan Workout cukup fokus ke input harian.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={action} className="space-y-6">
+          <form key={formKey} action={action} className="space-y-6">
             <section className="space-y-4">
               <SectionTitle icon={UserRound} title="Identitas" />
               <div className="grid gap-3 sm:grid-cols-2">
