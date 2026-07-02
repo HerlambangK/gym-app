@@ -89,34 +89,42 @@ jobs:
         run: npm run test:integration
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           CI_TEST_PREFIX: "ci_${{ github.run_id }}_"
       - name: Cleanup integration test data
         if: always()
         run: |
-          PGPASSWORD="${{ secrets.SUPABASE_DB_PASSWORD }}" psql \
-            "${{ secrets.SUPABASE_DB_URL }}" \
+          DB_URL="${{ secrets.SUPABASE_DB_URL }}"
+          DB_PASS="${{ secrets.SUPABASE_DB_PASSWORD }}"
+          if [ -z "$DB_URL" ]; then
+            echo "SUPABASE_DB_URL not set, skipping cleanup"
+            exit 0
+          fi
+          PGPASSWORD="$DB_PASS" psql \
+            "$DB_URL" \
             -c "delete from public.nutrition_logs where member_id in (select m.id from public.members m join public.users u on u.id=m.user_id where u.email like 'ci_${{ github.run_id }}_%');"
-          PGPASSWORD="${{ secrets.SUPABASE_DB_PASSWORD }}" psql \
-            "${{ secrets.SUPABASE_DB_URL }}" \
+          PGPASSWORD="$DB_PASS" psql \
+            "$DB_URL" \
             -c "delete from public.attendances where member_id in (select m.id from public.members m join public.users u on u.id=m.user_id where u.email like 'ci_${{ github.run_id }}_%');"
-          PGPASSWORD="${{ secrets.SUPABASE_DB_PASSWORD }}" psql \
-            "${{ secrets.SUPABASE_DB_URL }}" \
+          PGPASSWORD="$DB_PASS" psql \
+            "$DB_URL" \
             -c "delete from public.payments where invoice_id in (select i.id from public.invoices i join public.members m on m.id=i.member_id join public.users u on u.id=m.user_id where u.email like 'ci_${{ github.run_id }}_%');"
-          PGPASSWORD="${{ secrets.SUPABASE_DB_PASSWORD }}" psql \
-            "${{ secrets.SUPABASE_DB_URL }}" \
+          PGPASSWORD="$DB_PASS" psql \
+            "$DB_URL" \
             -c "delete from public.subscriptions where member_id in (select m.id from public.members m join public.users u on u.id=m.user_id where u.email like 'ci_${{ github.run_id }}_%');"
-          PGPASSWORD="${{ secrets.SUPABASE_DB_PASSWORD }}" psql \
-            "${{ secrets.SUPABASE_DB_URL }}" \
+          PGPASSWORD="$DB_PASS" psql \
+            "$DB_URL" \
             -c "delete from public.invoices where member_id in (select m.id from public.members m join public.users u on u.id=m.user_id where u.email like 'ci_${{ github.run_id }}_%');"
-          PGPASSWORD="${{ secrets.SUPABASE_DB_PASSWORD }}" psql \
-            "${{ secrets.SUPABASE_DB_URL }}" \
+          PGPASSWORD="$DB_PASS" psql \
+            "$DB_URL" \
             -c "delete from public.members where user_id in (select id from public.users where email like 'ci_${{ github.run_id }}_%');"
-          PGPASSWORD="${{ secrets.SUPABASE_DB_PASSWORD }}" psql \
-            "${{ secrets.SUPABASE_DB_URL }}" \
+          PGPASSWORD="$DB_PASS" psql \
+            "$DB_URL" \
             -c "delete from public.user_roles where user_id in (select id from public.users where email like 'ci_${{ github.run_id }}_%');"
-          PGPASSWORD="${{ secrets.SUPABASE_DB_PASSWORD }}" psql \
-            "${{ secrets.SUPABASE_DB_URL }}" \
+          PGPASSWORD="$DB_PASS" psql \
+            "$DB_URL" \
             -c "delete from public.users where email like 'ci_${{ github.run_id }}_%';"
 
   build:

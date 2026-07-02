@@ -15,7 +15,7 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:integration": "jest --testPathPatterns='src/__tests__/integration/' --forceExit --detectOpenHandles"
+    "test:integration": "jest --testPathPattern='src/__tests__/integration/' --forceExit --detectOpenHandles"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
