@@ -23,7 +23,7 @@ export default async function Page() {
   if (!target?.gender) redirect("/member/profile?next=/member/workouts&missing=gender")
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       <DashboardPageHeader
         eyebrow="Workout"
         status="Plan + Progress"

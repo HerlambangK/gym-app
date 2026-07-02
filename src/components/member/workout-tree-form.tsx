@@ -512,10 +512,10 @@ export function WorkoutTreeForm({
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {profileIncomplete ? (
         <Card className="border-amber-500/30 bg-amber-500/5">
-          <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+          <CardContent className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div>
               <p className="font-semibold">Program memakai default sementara</p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -532,7 +532,7 @@ export function WorkoutTreeForm({
         </Card>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
         <WorkoutStat icon={Dumbbell} label="Latihan" value={`${rows.length}`} helper={`${dashboard.trainingDays} hari aktif`} />
         <WorkoutStat icon={Flame} label="Volume" value={`${dashboard.totalSets} set`} helper={`${dashboard.avgSetsPerDay} set/hari latihan`} />
         <WorkoutStat icon={CheckCircle2} label="Balance" value={`${dashboard.balanceScore}%`} helper={`${dashboard.muscleCount} area otot`} />
@@ -540,14 +540,14 @@ export function WorkoutTreeForm({
       </div>
 
       <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <CardContent className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div>
             <p className="font-semibold">Workout profile</p>
             <p className="mt-1 text-sm text-muted-foreground">
               {workoutGoal} · {workoutLevel} · {workoutDays}x/minggu · {workoutDuration} menit
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="grid grid-cols-[auto_1fr] items-center gap-2 sm:flex sm:flex-row sm:items-center">
             <Badge variant="secondary">{dashboard.totalSets} set/minggu</Badge>
             <Button type="button" className="gap-2" onClick={openQuickDialog}>
               <Plus size={16} />
@@ -557,7 +557,7 @@ export function WorkoutTreeForm({
         </CardContent>
       </Card>
 
-      <div className="flex gap-2 overflow-x-auto rounded-lg border border-border bg-muted/25 p-1">
+      <div className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-muted/25 p-1 sm:gap-2">
         {tabs.map((tab) => {
           const Icon = tab.icon
           return (
@@ -565,7 +565,7 @@ export function WorkoutTreeForm({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-md px-3 text-sm font-medium transition ${activeTab === tab.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`inline-flex h-9 shrink-0 items-center gap-1.5 rounded-md px-2.5 text-sm font-medium transition sm:h-10 sm:gap-2 sm:px-3 ${activeTab === tab.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               <Icon size={15} />
               {tab.label}
@@ -575,7 +575,7 @@ export function WorkoutTreeForm({
       </div>
 
       {activeTab === "program" ? (
-        <form action={action} className="space-y-4 sm:space-y-6">
+        <form action={action} className="space-y-3 sm:space-y-6">
           <input type="hidden" name="goal" value={workoutGoal} />
           <input type="hidden" name="level" value={workoutLevel} />
           <input type="hidden" name="weeklySessions" value={workoutDays} />
@@ -598,36 +598,36 @@ export function WorkoutTreeForm({
           ))}
 
           <Card>
-            <CardHeader className="p-4 sm:p-6">
+            <CardHeader className="p-3 pb-2 sm:p-6">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <CardTitle>Program Latihan</CardTitle>
                   <CardDescription>Input lewat anatomy selector, daftar program tetap ringkas untuk mobile dan desktop.</CardDescription>
                 </div>
-                <div className="grid gap-2 sm:grid-cols-2 lg:flex">
-                  <Button type="button" variant="secondary" className="gap-2" onClick={openQuickDialog}>
+                <div className="grid grid-cols-3 gap-2 lg:flex">
+                  <Button type="button" variant="secondary" className="gap-1 px-2 sm:gap-2" onClick={openQuickDialog}>
                     <Plus size={16} />
                     Input Hari Ini
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => setRows(templateRows.map((item, index) => ({ ...item, id: `${item.id}-copy-${index}` })))}>
+                  <Button type="button" variant="outline" className="px-2" onClick={() => setRows(templateRows.map((item, index) => ({ ...item, id: `${item.id}-copy-${index}` })))}>
                     Pakai Template
                   </Button>
-                  <Button type="button" className="gap-2" onClick={openCreateDialog}>
+                  <Button type="button" className="gap-1 px-2 sm:gap-2" onClick={openCreateDialog}>
                     <Plus size={16} />
                     Tambah Latihan
                   </Button>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4 p-4 pt-0 sm:p-6 sm:pt-0">
-              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+            <CardContent className="space-y-3 p-3 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
+              <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:gap-3">
                 <Input name="title" defaultValue={program?.title || `${workoutGoal} ${workoutDays} Hari`} placeholder="Nama program" required />
                 <Button type="submit" disabled={pending || rows.length === 0}>
                   {pending ? "Menyimpan..." : "Simpan Program"}
                 </Button>
               </div>
 
-              <div className="space-y-3 md:hidden">
+              <div className="space-y-2 md:hidden">
                 {rows.map((item) => (
                   <ExerciseMobileCard
                     key={item.id}
@@ -1063,14 +1063,14 @@ function guessEquipment(name: string) {
 function WorkoutStat({ icon: Icon, label, value, helper }: { icon: typeof Dumbbell; label: string; value: string; helper: string }) {
   return (
     <Card>
-      <CardContent className="flex items-start gap-3 p-4">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <Icon size={17} />
+      <CardContent className="flex items-start gap-2 p-3 sm:gap-3 sm:p-4">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:size-9">
+          <Icon size={16} />
         </span>
         <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="mt-1 truncate text-xl font-semibold">{value}</p>
-          <p className="mt-1 text-xs text-muted-foreground">{helper}</p>
+          <p className="text-xs text-muted-foreground sm:text-sm">{label}</p>
+          <p className="mt-0.5 truncate text-lg font-semibold sm:mt-1 sm:text-xl">{value}</p>
+          <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground sm:mt-1 sm:text-xs">{helper}</p>
         </div>
       </CardContent>
     </Card>
@@ -1079,13 +1079,13 @@ function WorkoutStat({ icon: Icon, label, value, helper }: { icon: typeof Dumbbe
 
 function ExerciseMobileCard({ item, canDelete, onEdit, onDelete }: { item: ExerciseRow; canDelete: boolean; onEdit: () => void; onDelete: () => void }) {
   return (
-    <div className="rounded-lg border border-border p-3">
+    <div className="rounded-lg border border-border p-2.5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <Badge variant="outline">{item.dayName}</Badge>
-          <p className="mt-2 font-medium">{item.exerciseName || "Latihan"}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{item.muscleGroup} · {item.equipmentRow || "Alat bebas"}</p>
-          <p className="mt-1 text-sm tabular-nums text-muted-foreground">{item.sets} set · {item.reps || "-"}</p>
+          <p className="mt-1.5 font-medium">{item.exerciseName || "Latihan"}</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">{item.muscleGroup} · {item.equipmentRow || "Alat bebas"}</p>
+          <p className="mt-0.5 text-sm tabular-nums text-muted-foreground">{item.sets} set · {item.reps || "-"}</p>
         </div>
         <div className="flex shrink-0 gap-1">
           <Button type="button" variant="ghost" size="icon" aria-label="Edit latihan" onClick={onEdit}>

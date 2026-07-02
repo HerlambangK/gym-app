@@ -299,9 +299,9 @@ export function CheckInPanel({
           </DialogContent>
         </Dialog>
       )}
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
+      <div className="grid gap-3 sm:gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
       <Card className="min-w-0 overflow-hidden">
-        <CardHeader>
+        <CardHeader className="p-3 pb-2 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <CardTitle>{isAdminMode ? "Validasi Lokasi Cabang" : active ? "Sesi latihan aktif" : "Mulai latihan"}</CardTitle>
@@ -312,27 +312,27 @@ export function CheckInPanel({
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-5">
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-border p-3">
-              <MapPin size={18} className="text-primary" />
-              <p className="mt-2 text-sm text-muted-foreground">Jarak</p>
+        <CardContent className="space-y-3 p-3 pt-0 sm:space-y-5 sm:p-6 sm:pt-0">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+            <div className="rounded-lg border border-border p-2.5 sm:p-3">
+              <MapPin size={16} className="text-primary sm:size-[18px]" />
+              <p className="mt-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">Jarak</p>
               <p className="font-semibold">{distance}m / {branchRadius}m</p>
             </div>
-            <div className="rounded-lg border border-border p-3">
-              <Wifi size={18} className="text-cyan-300" />
-              <p className="mt-2 text-sm text-muted-foreground">{isAdminMode ? "Referensi" : "Akurasi GPS"}</p>
+            <div className="rounded-lg border border-border p-2.5 sm:p-3">
+              <Wifi size={16} className="text-cyan-300 sm:size-[18px]" />
+              <p className="mt-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">{isAdminMode ? "Referensi" : "Akurasi GPS"}</p>
               <p className="font-semibold">{isAdminMode ? "Titik cabang" : location ? `${Math.round(location.accuracy)}m` : "-"}</p>
             </div>
-            <div className="rounded-lg border border-border p-3">
-              <Timer size={18} className="text-emerald-300" />
-              <p className="mt-2 text-sm text-muted-foreground">Durasi</p>
+            <div className="col-span-2 rounded-lg border border-border p-2.5 sm:col-span-1 sm:p-3">
+              <Timer size={16} className="text-emerald-300 sm:size-[18px]" />
+              <p className="mt-1.5 text-xs text-muted-foreground sm:mt-2 sm:text-sm">Durasi</p>
               <p className="font-semibold tabular-nums">{formatDuration(durationSec)}</p>
             </div>
           </div>
           {addressInfo && (
-            <div className="rounded-md border border-border p-3">
-              <p className="text-sm font-medium text-muted-foreground">Lokasi Anda</p>
+            <div className="rounded-md border border-border p-2.5 sm:p-3">
+              <p className="text-xs font-medium text-muted-foreground sm:text-sm">Lokasi Anda</p>
               <p className="mt-1 text-sm font-semibold">{addressInfo.displayName}</p>
             </div>
           )}
@@ -384,13 +384,13 @@ export function CheckInPanel({
         </CardContent>
       </Card>
       <Card className="min-w-0 overflow-hidden">
-        <CardHeader>
+        <CardHeader className="p-3 pb-2 sm:p-6">
           <CardTitle>Lokasi Gym</CardTitle>
           <CardDescription>
             {branch ? `${branch.name} - ${branch.address}` : "Admin belum mengatur lokasi cabang."}
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2.5 p-3 pt-0 sm:space-y-3 sm:p-6 sm:pt-0">
           {branch ? (
             <>
               <BranchMapView
@@ -398,7 +398,7 @@ export function CheckInPanel({
                 longitude={branch.longitude}
                 radiusMeters={branch.radiusMeters}
               />
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm leading-5 text-muted-foreground">
                 Mulai latihan wajib berada dalam radius {branch.radiusMeters} meter dari titik cabang. Selesaikan latihan bisa dilakukan dari luar area gym.
               </p>
             </>

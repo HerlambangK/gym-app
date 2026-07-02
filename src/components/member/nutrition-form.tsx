@@ -125,10 +125,10 @@ export function NutritionForm({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       {profileIncomplete ? (
         <Card className="border-amber-500/30 bg-amber-500/5">
-          <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <CardContent className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-5">
             <div>
               <p className="font-semibold">Target memakai default sementara</p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -145,7 +145,7 @@ export function NutritionForm({
         </Card>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
         <MetricCard label="Kalori" value={`${totals.calories}/${targetCalories}`} helper={`Sisa ${Math.max(0, targetCalories - totals.calories)} kcal`} />
         <MetricCard label="Protein" value={`${totals.protein}/${targetProtein}g`} helper={gap(totals.protein, targetProtein, "g")} />
         <MetricCard label="Karbo" value={`${totals.carbs}/${targetCarbs}g`} helper={gap(totals.carbs, targetCarbs, "g")} />
@@ -153,7 +153,7 @@ export function NutritionForm({
       </div>
 
       <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <CardContent className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div>
             <p className="font-semibold">Smart suggestion</p>
             <p className="mt-1 text-sm text-muted-foreground">{suggestion}</p>
@@ -162,9 +162,9 @@ export function NutritionForm({
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+      <div className="grid gap-3 sm:gap-6 xl:grid-cols-[0.95fr_1.05fr]">
         <Card>
-          <CardHeader>
+          <CardHeader className="p-3 pb-2 sm:p-6">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <CardTitle>Input Makanan</CardTitle>
@@ -176,8 +176,8 @@ export function NutritionForm({
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
-            <form action={action} className="space-y-4">
+          <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
+            <form action={action} className="space-y-3 sm:space-y-4">
               <input type="hidden" name="logDate" value={today} />
               <input type="hidden" name="logId" value={editingLogId || ""} />
               <input type="hidden" name="mealType" value={meal} />
@@ -199,7 +199,7 @@ export function NutritionForm({
                 </div>
               ) : null}
 
-              <div className="grid gap-3 sm:grid-cols-[0.7fr_1.4fr_0.8fr]">
+              <div className="grid gap-2 sm:grid-cols-[0.7fr_1.4fr_0.8fr] sm:gap-3">
                 <select value={meal} onChange={(event) => setMeal(event.target.value)} className="h-10 rounded-md border border-input bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <option value="BREAKFAST">Sarapan</option>
                   <option value="LUNCH">Siang</option>
@@ -210,7 +210,7 @@ export function NutritionForm({
                 <Input name="foodName" value={foodName} onChange={(event) => setFoodName(event.target.value)} placeholder="Nasi ayam, telur, tempe" required />
                 <Input name="portion" value={portion} onChange={(event) => setPortion(event.target.value)} placeholder="1 porsi" />
               </div>
-              <div className="grid gap-3 sm:grid-cols-5">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-5 sm:gap-3">
                 <Input name="calories" type="number" min={0} value={calories} onChange={(event) => setCalories(event.target.value)} placeholder="Kalori (kcal)" required />
                 <Input name="proteinGram" type="number" min={0} value={protein} onChange={(event) => setProtein(event.target.value)} placeholder="Protein (gram)" />
                 <Input name="carbsGram" type="number" min={0} value={carbs} onChange={(event) => setCarbs(event.target.value)} placeholder="Karbo (gram)" />
@@ -218,11 +218,11 @@ export function NutritionForm({
                 <Input name="waterMl" type="number" min={0} value={water} onChange={(event) => setWater(event.target.value)} placeholder="Air (mililiter)" />
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-2 gap-2">
                 {templates.map((item) => (
-                  <button key={item.name} type="button" onClick={() => applyTemplate(item)} className="rounded-lg border border-border px-3 py-2 text-left text-sm transition hover:border-primary/50 hover:bg-muted/50">
-                    <span className="font-medium">{item.name}</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">{item.calories} kcal · P {item.protein}g</span>
+                  <button key={item.name} type="button" onClick={() => applyTemplate(item)} className="rounded-lg border border-border px-2.5 py-2 text-left text-sm transition hover:border-primary/50 hover:bg-muted/50 sm:px-3">
+                    <span className="line-clamp-1 font-medium">{item.name}</span>
+                    <span className="mt-0.5 block text-xs text-muted-foreground">{item.calories} kcal · P {item.protein}g</span>
                   </button>
                 ))}
               </div>
@@ -245,14 +245,14 @@ export function NutritionForm({
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="p-3 pb-2 sm:p-6">
             <CardTitle className="flex items-center gap-2">
               <Utensils size={18} />
               Diary Hari Ini
             </CardTitle>
             <CardDescription>{formatDate(today)}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 p-3 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
             <ProgressLine icon={Flame} label="Kalori" value={totals.calories} target={targetCalories} />
             <ProgressLine icon={Apple} label="Protein" value={totals.protein} target={targetProtein} />
             <Table>
@@ -332,10 +332,10 @@ function formatDate(date: string) {
 function MetricCard({ label, value, helper }: { label: string; value: string; helper: string }) {
   return (
     <Card>
-      <CardContent className="p-5">
+      <CardContent className="p-3 sm:p-5">
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="mt-2 text-2xl font-semibold tabular-nums">{value}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{helper}</p>
+        <p className="mt-1 text-xl font-semibold tabular-nums sm:mt-2 sm:text-2xl">{value}</p>
+        <p className="mt-0.5 text-xs text-muted-foreground sm:mt-1 sm:text-sm">{helper}</p>
       </CardContent>
     </Card>
   )

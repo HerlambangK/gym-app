@@ -43,7 +43,7 @@ export default async function Page() {
   const workoutIntensity = getWorkoutIntensity(workoutProgram)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       <DashboardPageHeader
         eyebrow="Member"
         title="Dashboard Member"
@@ -68,7 +68,7 @@ export default async function Page() {
       ) : null}
 
       {subscription && expiryInfo.isExpiringSoon ? (
-        <div className={`rounded-xl border p-4 text-sm ${
+        <div className={`rounded-xl border p-3 text-sm sm:p-4 ${
           expiryInfo.isCritical
             ? "border-red-500/30 bg-red-500/10 text-red-800 dark:text-red-200"
             : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-100"
@@ -106,11 +106,11 @@ export default async function Page() {
       ) : null}
 
       <Card>
-        <CardHeader className="p-4 sm:p-6">
+        <CardHeader className="p-3 pb-2 sm:p-6">
           <CardTitle>Ringkasan Member</CardTitle>
           <CardDescription>Semua status utama dimuat ringkas dalam satu card agar mobile tidak terlalu panjang.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-2 p-4 pt-0 sm:grid-cols-2 sm:p-6 sm:pt-0 xl:grid-cols-4">
+        <CardContent className="grid grid-cols-2 gap-2 p-3 pt-0 sm:grid-cols-2 sm:p-6 sm:pt-0 xl:grid-cols-4">
           <CompactInfo
             icon={Timer}
             label="Status Sesi"
@@ -148,9 +148,9 @@ export default async function Page() {
         ) : null}
       </Card>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
+      <div className="grid items-start gap-3 sm:gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
         <Card className="min-w-0">
-          <CardHeader>
+          <CardHeader className="p-3 pb-2 sm:p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <CardTitle>Membership</CardTitle>
@@ -169,7 +169,7 @@ export default async function Page() {
               )}
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-3 p-3 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
             {subscription ? (
               <>
                 <div className="max-w-xl">
@@ -213,14 +213,14 @@ export default async function Page() {
                   </div>
                 ) : null}
 
-                <div className="grid gap-3 md:grid-cols-3">
-                  <Link href="/member/blog" className="rounded-lg border border-border p-3 text-sm transition hover:border-primary/40 hover:bg-muted/50">
+                <div className="grid grid-cols-3 gap-2 md:gap-3">
+                  <Link href="/member/blog" className="rounded-lg border border-border p-2 text-xs leading-5 transition hover:border-primary/40 hover:bg-muted/50 sm:p-3 sm:text-sm">
                     Blog premium tersedia.
                   </Link>
-                  <Link href="/member/nutrition" className="rounded-lg border border-border p-3 text-sm transition hover:border-primary/40 hover:bg-muted/50">
+                  <Link href="/member/nutrition" className="rounded-lg border border-border p-2 text-xs leading-5 transition hover:border-primary/40 hover:bg-muted/50 sm:p-3 sm:text-sm">
                     Log nutrisi tersedia.
                   </Link>
-                  <Link href="/member/workouts" className="rounded-lg border border-border p-3 text-sm transition hover:border-primary/40 hover:bg-muted/50">
+                  <Link href="/member/workouts" className="rounded-lg border border-border p-2 text-xs leading-5 transition hover:border-primary/40 hover:bg-muted/50 sm:p-3 sm:text-sm">
                     Program workout tersedia.
                   </Link>
                 </div>
@@ -246,11 +246,11 @@ export default async function Page() {
         </Card>
         <div className="space-y-5">
           <Card className="min-w-0">
-            <CardHeader>
+            <CardHeader className="p-3 pb-2 sm:p-6">
               <CardTitle>Aktivitas Terakhir</CardTitle>
               <CardDescription>Riwayat singkat attendance tanpa membuka modul check-in.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 pt-0 sm:p-6 sm:pt-0">
               {recentAttendances.length > 0 ? (
                 <div className="space-y-3">
                   {recentAttendances.map((attendance) => {
@@ -278,7 +278,7 @@ export default async function Page() {
             </CardContent>
           </Card>
           <Card className="min-w-0 border-primary/20 bg-primary/5">
-            <CardHeader>
+            <CardHeader className="p-3 pb-2 sm:p-6">
               <div className="flex items-center gap-3">
                 <span className="flex size-10 items-center justify-center rounded-md bg-primary text-primary-foreground">
                   <Utensils size={18} />
@@ -289,7 +289,7 @@ export default async function Page() {
                 </div>
               </div>
             </CardHeader>
-          <CardContent className="grid gap-2 sm:grid-cols-2">
+          <CardContent className="grid gap-2 p-3 pt-0 sm:grid-cols-2 sm:p-6 sm:pt-0">
               <Link href="/member/nutrition">
                 <Button variant="outline" className="w-full justify-between">
                   Catat nutrisi
@@ -308,7 +308,7 @@ export default async function Page() {
       </div>
 
       <Card className="min-w-0">
-        <CardHeader className="p-4 sm:p-6">
+        <CardHeader className="p-3 pb-2 sm:p-6">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <CardTitle>Progress Workout</CardTitle>
@@ -317,7 +317,7 @@ export default async function Page() {
             <Badge variant="secondary">{workoutStats.sets} set/minggu</Badge>
           </div>
         </CardHeader>
-        <CardContent className="space-y-5 p-4 pt-0 sm:p-6 sm:pt-0">
+        <CardContent className="space-y-4 p-3 pt-0 sm:space-y-5 sm:p-6 sm:pt-0">
           <WorkoutBodyIntensity data={workoutIntensity} />
           <div className="grid gap-4 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1fr)_auto] lg:items-end">
             <div className="grid grid-cols-3 gap-2">
@@ -425,9 +425,9 @@ function normalizeMuscleLabel(value: string) {
 
 function MiniWorkoutStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-border p-3 text-center">
+    <div className="rounded-lg border border-border p-2.5 text-center sm:p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
+      <p className="mt-0.5 text-lg font-semibold tabular-nums sm:mt-1">{value}</p>
     </div>
   )
 }
@@ -444,15 +444,15 @@ function CompactInfo({
   helper: string
 }) {
   return (
-    <div className="min-w-0 rounded-lg border border-border bg-muted/20 p-3">
-      <div className="flex items-start gap-3">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-background text-primary">
-          <Icon size={15} />
+    <div className="min-w-0 rounded-lg border border-border bg-muted/20 p-2 sm:p-3">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-3">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-background text-primary sm:size-8">
+          <Icon size={14} />
         </span>
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="mt-1 truncate text-base font-semibold">{value}</p>
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{helper}</p>
+          <p className="mt-0.5 truncate text-sm font-semibold sm:mt-1 sm:text-base">{value}</p>
+          <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground sm:mt-1 sm:text-xs">{helper}</p>
         </div>
       </div>
     </div>

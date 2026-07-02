@@ -24,7 +24,7 @@ export function DashboardShell({
     <SidebarProvider>
       <AppSidebar role={role} userName={userName} userEmail={userEmail} />
       <SidebarInset>
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-2 border-b border-border bg-background/90 px-3 backdrop-blur transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sm:px-4">
+        <header className="sticky top-0 z-30 flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-background/90 px-3 backdrop-blur transition-[width,height] ease-linear sm:h-16 sm:px-4 group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex min-w-0 items-center gap-2">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 data-vertical:h-4" />
@@ -41,7 +41,7 @@ export function DashboardShell({
             {role}
           </div>
         </header>
-        <div className="flex-1 p-4 sm:p-5 lg:p-8">{children}</div>
+        <div className="flex-1 p-2.5 sm:p-5 lg:p-8">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   )

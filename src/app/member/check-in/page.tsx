@@ -23,7 +23,7 @@ export default async function Page() {
   const subscription = member ? await getActiveSubscription(member.id) : null
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       <DashboardPageHeader
         eyebrow="Member"
         status={activeSession ? "Sesi aktif" : branch ? "GPS check-in" : "Lokasi belum diatur"}
@@ -39,7 +39,7 @@ export default async function Page() {
         }
       />
       <Card className={!subscription ? "border-amber-500/30" : ""}>
-        <CardHeader className="p-4 sm:p-6">
+        <CardHeader className="p-3 pb-2 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <CardTitle>Validasi Check-in</CardTitle>
@@ -51,7 +51,7 @@ export default async function Page() {
             </Badge>
           </div>
         </CardHeader>
-        <CardContent className="grid gap-2 p-4 pt-0 min-[430px]:grid-cols-2 sm:p-6 sm:pt-0 lg:grid-cols-3">
+        <CardContent className="grid grid-cols-3 gap-2 p-3 pt-0 sm:p-6 sm:pt-0">
           <CheckInfo
             icon={ShieldCheck}
             label="Validasi"
@@ -98,15 +98,15 @@ function CheckInfo({
   helper: string
 }) {
   return (
-    <div className="min-w-0 rounded-lg border border-border bg-muted/20 p-3">
-      <div className="flex items-start gap-2">
-        <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md bg-background text-primary">
-          <Icon size={15} />
+    <div className="min-w-0 rounded-lg border border-border bg-muted/20 p-2 sm:p-3">
+      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:gap-2">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-background text-primary sm:mt-0.5 sm:size-8">
+          <Icon size={14} />
         </span>
         <div className="min-w-0">
           <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="mt-1 truncate text-sm font-semibold">{value}</p>
-          <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{helper}</p>
+          <p className="mt-0.5 truncate text-sm font-semibold">{value}</p>
+          <p className="mt-0.5 line-clamp-1 text-[11px] text-muted-foreground sm:text-xs">{helper}</p>
         </div>
       </div>
     </div>

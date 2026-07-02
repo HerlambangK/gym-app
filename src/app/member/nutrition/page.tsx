@@ -20,7 +20,7 @@ export default async function Page() {
     : [[], null]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       <DashboardPageHeader
         eyebrow="Nutrition"
         status="Diary + Smart Target"

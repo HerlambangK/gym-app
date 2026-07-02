@@ -78,7 +78,7 @@ export default async function Page() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       <DashboardPageHeader
         eyebrow="Billing"
         status={subscription ? "Subscription aktif" : "Belum aktif"}
@@ -87,7 +87,7 @@ export default async function Page() {
       />
 
       {subscription && expiryInfo.isExpiringSoon ? (
-        <div className={`rounded-xl border p-4 text-sm ${
+        <div className={`rounded-xl border p-3 text-sm sm:p-4 ${
           expiryInfo.isCritical
             ? "border-red-500/30 bg-red-500/10 text-red-800 dark:text-red-200"
             : "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-100"
@@ -102,7 +102,7 @@ export default async function Page() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {plans.map((plan: Record<string, unknown>) => {
           const p = plan as {
             id: string
@@ -117,20 +117,20 @@ export default async function Page() {
 
           return (
             <Card key={p.id} className={activePlan ? "border-primary" : ""}>
-              <CardHeader>
+              <CardHeader className="p-4 pb-2 sm:p-6">
                 <div className="flex items-center justify-between gap-3">
                   <CardTitle>{p.name}</CardTitle>
                   {activePlan ? <Badge variant="success">Aktif</Badge> : null}
                 </div>
                 <CardDescription>{p.description || `${p.duration_days} hari akses gym`}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 p-4 pt-0 sm:space-y-4 sm:p-6 sm:pt-0">
                 <div>
-                  <p className="text-2xl font-semibold">{rupiah.format(Number(p.price))}</p>
+                  <p className="text-xl font-semibold sm:text-2xl">{rupiah.format(Number(p.price))}</p>
                   <p className="text-sm text-muted-foreground">{p.duration_days} hari</p>
                 </div>
                 {stack && !activePlan ? (
-                  <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+                  <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-2.5 text-xs text-muted-foreground sm:p-3">
                     <p>Subscription saat ini aktif sampai <span className="font-medium text-foreground">{formatDate(activeEndDate!)}</span> ({expiryInfo.remainingDays} hari).</p>
                     <p>Paket baru akan aktif: <span className="font-medium text-foreground">{formatDate(stack.startDate)}</span> – <span className="font-medium text-foreground">{formatDate(stack.endDate)}</span></p>
                   </div>

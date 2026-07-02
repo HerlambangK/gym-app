@@ -44,13 +44,45 @@ function StatusBadge({ status }: { status: string }) {
 export function BillingInvoiceTable({ invoices }: { invoices: BillingInvoice[] }) {
   return (
     <Card className="min-w-0 overflow-hidden">
-      <CardHeader className="flex flex-row items-center gap-2">
+      <CardHeader className="flex flex-row items-center gap-2 p-4 sm:p-6">
         <FileText className="h-5 w-5 text-muted-foreground" />
         <CardTitle>Invoice</CardTitle>
         <span className="text-sm text-muted-foreground">({invoices.length})</span>
       </CardHeader>
-      <CardContent className="p-0">
-        <Table className="min-w-[920px]">
+      <CardContent className="p-3 pt-0 sm:p-0">
+        <div className="space-y-2 md:hidden">
+          {invoices.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border p-4 text-center text-sm text-muted-foreground">
+              Invoice akan muncul setelah Anda memilih paket.
+            </div>
+          ) : invoices.map((invoice) => (
+            <div key={invoice.number} className="rounded-lg border border-border p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold">{invoice.number}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{invoice.plan} · {methodLabel(invoice.method)}</p>
+                </div>
+                <StatusBadge status={invoice.status} />
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="font-semibold tabular-nums">{rupiah.format(invoice.amount)}</p>
+                {invoice.status === "PENDING" && invoice.paymentResult ? (
+                  <SubscribeButton
+                    planCode={invoice.planCode}
+                    label="Lanjut Bayar"
+                    initialPaymentResult={invoice.paymentResult}
+                  />
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    {invoice.status === "PAID" ? "Selesai" : formatDate(invoice.createdAt)}
+                  </span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <Table className="hidden min-w-[920px] md:table">
           <TableHeader>
             <TableRow>
               <TableHead>Invoice</TableHead>

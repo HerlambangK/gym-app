@@ -97,7 +97,7 @@ export function AppSidebar({
       <SidebarContent>
         <NavMain items={data.navMain} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="hidden md:flex">
         <NavUser user={data.user} role={role} />
       </SidebarFooter>
       <SidebarRail />

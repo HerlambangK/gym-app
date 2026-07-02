@@ -1,3 +1,5 @@
+dashdi dashboard tampilkan juga human budy gighliner nya di ambil dari data banyak nya latihan kolektif , warnanya dari pudar ke pekat sesuai intensitas sering nya latihan![1782987420146](image/TEST_SCENARIOS/1782987420146.png)
+
 # Daftar Test Scenario — Gym App
 
 ## 1. Register Scenario (`src/__tests__/scenarios/register.scenario.test.ts`) — 7 Tests
@@ -80,54 +82,54 @@
 
 ## 7. Halaman Pricing — Page UI Test (`src/app/__tests__/pricing-page.test.tsx`) — 14 Tests
 
-| #  | Skenario                                      | Setup                      | Assertion                                                           |
-| -- | --------------------------------------------- | -------------------------- | ------------------------------------------------------------------ |
-| 1  | Menampilkan SiteHeader                        | user=null                  | `<header data-testid="site-header">` ada                          |
-| 2  | Menampilkan badge "Membership"                | user=null                  | Text "Membership" di dalam Badge                                   |
-| 3  | Menampilkan heading h1 yang benar             | user=null                  | `<h1>Pilih paket yang tepat untuk Anda.</h1>`                     |
-| 4  | Menampilkan nama & deskripsi tiap paket       | user=null, 4 plans         | Each plan name + description visible                               |
-| 5  | Menampilkan harga dalam format Rupiah         | user=null, 4 plans         | Rp 45.000, Rp 449.000, Rp 299.000, Rp 1.199.000                   |
-| 6  | Tombol Daftar (link → `/?action=register`)    | user=null                  | 4 links dengan href yang benar                                     |
-| 7  | Paket PLUS_MONTHLY mendapat `border-primary`  | user=null                  | Card Plus Monthly memiliki class `border-primary`                  |
-| 8  | Paket non-populer tidak punya `border-primary`| user=null                  | Card Daily Pass tidak memiliki class `border-primary`              |
-| 9  | Tombol Subscribe muncul saat sudah login      | user={ id, email }         | 4 tombol Subscribe (data-testid="subscribe-btn")                   |
-| 10 | SubscribeButton mengirim planCode yang benar  | user={ id, email }         | Setiap button punya `data-plan-code` sesuai                        |
-| 11 | Tidak ada link Daftar saat sudah login        | user={ id, email }         | `queryByRole("link", /daftar/)` → null                             |
-| 12 | Empty state — pesan "Belum ada paket"         | plans=[]                   | Text "Belum ada paket tersedia."                                   |
-| 13 | Empty state — tidak ada kartu paket           | plans=[]                   | Tidak ada nama/Subscribe/Daftar                                    |
-| 14 | Empty state — tidak ada harga Rupiah          | plans=[]                   | Tidak ada text dengan prefix Rp                                    |
+| #  | Skenario                                        | Setup              | Assertion                                              |
+| -- | ----------------------------------------------- | ------------------ | ------------------------------------------------------ |
+| 1  | Menampilkan SiteHeader                          | user=null          | `<header data-testid="site-header">` ada             |
+| 2  | Menampilkan badge "Membership"                  | user=null          | Text "Membership" di dalam Badge                       |
+| 3  | Menampilkan heading h1 yang benar               | user=null          | `<h1>Pilih paket yang tepat untuk Anda.</h1>`        |
+| 4  | Menampilkan nama & deskripsi tiap paket         | user=null, 4 plans | Each plan name + description visible                   |
+| 5  | Menampilkan harga dalam format Rupiah           | user=null, 4 plans | Rp 45.000, Rp 449.000, Rp 299.000, Rp 1.199.000        |
+| 6  | Tombol Daftar (link →`/?action=register`)    | user=null          | 4 links dengan href yang benar                         |
+| 7  | Paket PLUS_MONTHLY mendapat`border-primary`   | user=null          | Card Plus Monthly memiliki class`border-primary`     |
+| 8  | Paket non-populer tidak punya`border-primary` | user=null          | Card Daily Pass tidak memiliki class`border-primary` |
+| 9  | Tombol Subscribe muncul saat sudah login        | user={ id, email } | 4 tombol Subscribe (data-testid="subscribe-btn")       |
+| 10 | SubscribeButton mengirim planCode yang benar    | user={ id, email } | Setiap button punya`data-plan-code` sesuai           |
+| 11 | Tidak ada link Daftar saat sudah login          | user={ id, email } | `queryByRole("link", /daftar/)` → null              |
+| 12 | Empty state — pesan "Belum ada paket"          | plans=[]           | Text "Belum ada paket tersedia."                       |
+| 13 | Empty state — tidak ada kartu paket            | plans=[]           | Tidak ada nama/Subscribe/Daftar                        |
+| 14 | Empty state — tidak ada harga Rupiah           | plans=[]           | Tidak ada text dengan prefix Rp                        |
 
 ## 8. UI Component Tests (Basic) — 48 Tests
 
-| File                                       | Tests | Deskripsi                                                            |
-| ------------------------------------------ | ----- | -------------------------------------------------------------------- |
-| `src/components/ui/__tests__/Button.test.tsx` | 9 | Render button, anchor, className, disabled, loading, value format   |
-| `src/components/ui/__tests__/Badge.test.tsx`  | 7 | Render text, variants (default/secondary/destructive/outline)        |
-| `src/components/ui/__tests__/Input.test.tsx`  | 7 | Render label, placeholder, type, disabled, autoComplete              |
-| `src/components/ui/__tests__/Card.test.tsx`   | 5 | Title, description, content, className, children                     |
-| `src/components/ui/__tests__/Progress.test.tsx` | 7 | Value, min/max, data-state, indicator, className                     |
-| `src/components/ui/__tests__/Skeleton.test.tsx` | 3 | Render div + animate-pulse, className, child                         |
-| `src/components/ui/__tests__/Separator.test.tsx` | 5 | role="separator", orientation, decorative, className                 |
-| `src/components/ui/__tests__/Textarea.test.tsx` | 5 | Label, placeholder, disabled, structure, value via textContent       |
+| File                                               | Tests | Deskripsi                                                         |
+| -------------------------------------------------- | ----- | ----------------------------------------------------------------- |
+| `src/components/ui/__tests__/Button.test.tsx`    | 9     | Render button, anchor, className, disabled, loading, value format |
+| `src/components/ui/__tests__/Badge.test.tsx`     | 7     | Render text, variants (default/secondary/destructive/outline)     |
+| `src/components/ui/__tests__/Input.test.tsx`     | 7     | Render label, placeholder, type, disabled, autoComplete           |
+| `src/components/ui/__tests__/Card.test.tsx`      | 5     | Title, description, content, className, children                  |
+| `src/components/ui/__tests__/Progress.test.tsx`  | 7     | Value, min/max, data-state, indicator, className                  |
+| `src/components/ui/__tests__/Skeleton.test.tsx`  | 3     | Render div + animate-pulse, className, child                      |
+| `src/components/ui/__tests__/Separator.test.tsx` | 5     | role="separator", orientation, decorative, className              |
+| `src/components/ui/__tests__/Textarea.test.tsx`  | 5     | Label, placeholder, disabled, structure, value via textContent    |
 
 ## 9. UI Component Tests (Dashboard & Sidebar) — 23 Tests
 
-| File                                                    | Tests | Deskripsi                                                      |
-| ------------------------------------------------------- | ----- | -------------------------------------------------------------- |
-| `src/components/dashboard/__tests__/metric-card.test.tsx` | 8 | Label, formatted values (revenue/expense/profit), helper, 0   |
-| `src/components/__tests__/nav-user.test.tsx`              | 6 | Name, email, initials, aria-haspopup                           |
-| `src/components/__tests__/nav-main.test.tsx`              | 5 | All items rendered, label, icons, empty, hrefs                 |
-| `src/components/__tests__/team-switcher.test.tsx`         | 4 | Active team name, plan, empty teams, Dumbbell icon             |
+| File                                                        | Tests | Deskripsi                                                   |
+| ----------------------------------------------------------- | ----- | ----------------------------------------------------------- |
+| `src/components/dashboard/__tests__/metric-card.test.tsx` | 8     | Label, formatted values (revenue/expense/profit), helper, 0 |
+| `src/components/__tests__/nav-user.test.tsx`              | 6     | Name, email, initials, aria-haspopup                        |
+| `src/components/__tests__/nav-main.test.tsx`              | 5     | All items rendered, label, icons, empty, hrefs              |
+| `src/components/__tests__/team-switcher.test.tsx`         | 4     | Active team name, plan, empty teams, Dumbbell icon          |
 
 ## 10. Database Integration Tests — 16 Tests
 
-| File | Tests | Deskripsi |
-| ---- | ----- | --------- |
-| `src/__tests__/integration/db-users.test.ts` | 4 | Roles, permissions, role_permissions, CRUD user + role |
-| `src/__tests__/integration/db-plans.test.ts` | 4 | Active plans, daily pass, positive price, CRUD plan |
-| `src/__tests__/integration/db-members.test.ts` | 4 | Members, subscriptions, invoices, payments |
-| `src/__tests__/integration/db-branches.test.ts` | 2 | Branch ForgeFit + koordinat operasional valid, branding default |
-| `src/__tests__/integration/db-checkin.test.ts` | 2 | Attendances access + checked-out duration |
+| File                                              | Tests | Deskripsi                                                       |
+| ------------------------------------------------- | ----- | --------------------------------------------------------------- |
+| `src/__tests__/integration/db-users.test.ts`    | 4     | Roles, permissions, role_permissions, CRUD user + role          |
+| `src/__tests__/integration/db-plans.test.ts`    | 4     | Active plans, daily pass, positive price, CRUD plan             |
+| `src/__tests__/integration/db-members.test.ts`  | 4     | Members, subscriptions, invoices, payments                      |
+| `src/__tests__/integration/db-branches.test.ts` | 2     | Branch ForgeFit + koordinat operasional valid, branding default |
+| `src/__tests__/integration/db-checkin.test.ts`  | 2     | Attendances access + checked-out duration                       |
 
 Integration DB test mencetak speed setiap query ke stdout dengan format:
 
@@ -173,3 +175,4 @@ npm run test:coverage   # dengan coverage report
 - `npm test -- --runInBand`: 29 suites, 212 tests passed.
 - `npm run build`: passed.
 - `npm run test:e2e`: 21 tests passed.
+

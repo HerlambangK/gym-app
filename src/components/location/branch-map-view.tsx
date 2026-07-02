@@ -72,7 +72,7 @@ export function BranchMapView({
 
   return (
     <div className="relative isolate z-0 overflow-hidden rounded-xl border border-border bg-muted">
-      <div ref={containerRef} className="h-64 w-full" />
+      <div ref={containerRef} className="h-44 w-full sm:h-64" />
     </div>
   )
 }
