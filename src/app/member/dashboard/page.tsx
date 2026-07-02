@@ -148,7 +148,7 @@ export default async function Page() {
         ) : null}
       </Card>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1.05fr)_minmax(22rem,0.95fr)]">
         <Card className="min-w-0">
           <CardHeader>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -304,35 +304,43 @@ export default async function Page() {
               </Link>
             </CardContent>
           </Card>
-          <Card className="min-w-0">
-            <CardHeader>
-              <CardTitle>Progress Workout</CardTitle>
-              <CardDescription>{workoutStats.title}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <WorkoutBodyIntensity data={workoutIntensity} />
-              <div className="grid grid-cols-3 gap-2">
-                <MiniWorkoutStat label="Hari" value={String(workoutStats.days)} />
-                <MiniWorkoutStat label="Latihan" value={String(workoutStats.exercises)} />
-                <MiniWorkoutStat label="Set" value={String(workoutStats.sets)} />
-              </div>
-              <div>
-                <div className="mb-2 flex justify-between text-sm">
-                  <span>Balance program</span>
-                  <span className="font-medium">{workoutStats.balance}%</span>
-                </div>
-                <Progress value={workoutStats.balance} />
-              </div>
-              <Link href="/member/workouts">
-                <Button variant="outline" className="w-full justify-between">
-                  Lihat calendar latihan
-                  <ArrowRight size={15} />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
         </div>
       </div>
+
+      <Card className="min-w-0">
+        <CardHeader className="p-4 sm:p-6">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>Progress Workout</CardTitle>
+              <CardDescription>{workoutStats.title}</CardDescription>
+            </div>
+            <Badge variant="secondary">{workoutStats.sets} set/minggu</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-5 p-4 pt-0 sm:p-6 sm:pt-0">
+          <WorkoutBodyIntensity data={workoutIntensity} />
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,0.75fr)_minmax(0,1fr)_auto] lg:items-end">
+            <div className="grid grid-cols-3 gap-2">
+              <MiniWorkoutStat label="Hari" value={String(workoutStats.days)} />
+              <MiniWorkoutStat label="Latihan" value={String(workoutStats.exercises)} />
+              <MiniWorkoutStat label="Set" value={String(workoutStats.sets)} />
+            </div>
+            <div>
+              <div className="mb-2 flex justify-between text-sm">
+                <span>Balance program</span>
+                <span className="font-medium">{workoutStats.balance}%</span>
+              </div>
+              <Progress value={workoutStats.balance} />
+            </div>
+            <Link href="/member/workouts">
+              <Button variant="outline" className="w-full justify-between lg:w-auto lg:min-w-56">
+                Lihat calendar latihan
+                <ArrowRight size={15} />
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
