@@ -349,6 +349,27 @@ create table if not exists public.audit_logs (
   created_at timestamptz not null default now()
 );
 
+-- Performance indexes for common query patterns
+create index if not exists idx_members_user_id on public.members(user_id);
+create index if not exists idx_user_roles_user_id on public.user_roles(user_id);
+create index if not exists idx_attendances_member_id on public.attendances(member_id);
+create index if not exists idx_attendances_status on public.attendances(status);
+create index if not exists idx_attendances_member_status on public.attendances(member_id, status, check_out_time);
+create index if not exists idx_invoices_member_id on public.invoices(member_id);
+create index if not exists idx_subscriptions_member_id on public.subscriptions(member_id);
+create index if not exists idx_subscriptions_status on public.subscriptions(status);
+create index if not exists idx_subscriptions_member_status on public.subscriptions(member_id, status);
+create index if not exists idx_payments_invoice_id on public.payments(invoice_id);
+create index if not exists idx_payments_order_id on public.payments(provider_order_id);
+create index if not exists idx_nutrition_logs_member_id on public.nutrition_logs(member_id);
+create index if not exists idx_nutrition_logs_date on public.nutrition_logs(log_date);
+create index if not exists idx_nutrition_logs_member_date on public.nutrition_logs(member_id, log_date);
+create index if not exists idx_workout_programs_member_id on public.workout_programs(member_id);
+create index if not exists idx_expenses_branch_id on public.expenses(branch_id);
+create index if not exists idx_expenses_date on public.expenses(expense_date);
+create index if not exists idx_blog_posts_slug on public.blog_posts(slug);
+create index if not exists idx_blog_posts_status on public.blog_posts(status);
+
 alter table public.users enable row level security;
 alter table public.members enable row level security;
 alter table public.invoices enable row level security;

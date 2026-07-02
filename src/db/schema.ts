@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm"
 import {
-  pgTable, pgEnum, uuid, text, integer, boolean, jsonb, customType,
+  pgTable, pgEnum, uuid, text, integer, boolean, jsonb, customType, index,
 } from "drizzle-orm/pg-core"
 
 const numericAsNumber = customType<{ data: number; driverData: string }>({
@@ -63,6 +63,7 @@ export const user_roles = pgTable("user_roles", {
   role_id: uuid().notNull().references(() => roles.id, { onDelete: "cascade" }),
 }, (t) => [{
   pk: { columns: [t.user_id, t.role_id] },
+  idx_user_roles_user_id: index("idx_user_roles_user_id").on(t.user_id),
 }])
 
 export const branches = pgTable("branches", {
@@ -90,7 +91,9 @@ export const members = pgTable("members", {
   status: memberStatusEnum().notNull().default("ACTIVE"),
   created_at: text().notNull().default(sql`now()`),
   updated_at: text().notNull().default(sql`now()`),
-})
+}, (t) => [{
+  idx_members_user_id: index("idx_members_user_id").on(t.user_id),
+}])
 
 export const membership_plans = pgTable("membership_plans", {
   id: uuid().primaryKey().defaultRandom(),
@@ -138,7 +141,9 @@ export const invoices = pgTable("invoices", {
   expired_at: text(),
   created_at: text().notNull().default(sql`now()`),
   updated_at: text().notNull().default(sql`now()`),
-})
+}, (t) => [{
+  idx_invoices_member_id: index("idx_invoices_member_id").on(t.member_id),
+}])
 
 export const subscriptions = pgTable("subscriptions", {
   id: uuid().primaryKey().defaultRandom(),
@@ -150,7 +155,9 @@ export const subscriptions = pgTable("subscriptions", {
   status: subscriptionStatusEnum().notNull().default("PENDING_PAYMENT"),
   created_at: text().notNull().default(sql`now()`),
   updated_at: text().notNull().default(sql`now()`),
-})
+}, (t) => [{
+  idx_subscriptions_member_status: index("idx_subscriptions_member_status").on(t.member_id, t.status),
+}])
 
 export const payments = pgTable("payments", {
   id: uuid().primaryKey().defaultRandom(),
@@ -165,7 +172,10 @@ export const payments = pgTable("payments", {
   raw_callback: jsonb(),
   created_at: text().notNull().default(sql`now()`),
   updated_at: text().notNull().default(sql`now()`),
-})
+}, (t) => [{
+  idx_payments_invoice_id: index("idx_payments_invoice_id").on(t.invoice_id),
+  idx_payments_order_id: index("idx_payments_order_id").on(t.provider_order_id),
+}])
 
 export const attendances = pgTable("attendances", {
   id: uuid().primaryKey().defaultRandom(),
@@ -186,7 +196,10 @@ export const attendances = pgTable("attendances", {
   failure_reason: text(),
   created_at: text().notNull().default(sql`now()`),
   updated_at: text().notNull().default(sql`now()`),
-})
+}, (t) => [{
+  idx_attendances_member_status: index("idx_attendances_member_status").on(t.member_id, t.status, t.check_out_time),
+  idx_attendances_member_id: index("idx_attendances_member_id").on(t.member_id),
+}])
 
 export const expenses = pgTable("expenses", {
   id: uuid().primaryKey().defaultRandom(),
@@ -200,7 +213,9 @@ export const expenses = pgTable("expenses", {
   created_by: uuid().references(() => users.id),
   created_at: text().notNull().default(sql`now()`),
   updated_at: text().notNull().default(sql`now()`),
-})
+}, (t) => [{
+  idx_expenses_branch_date: index("idx_expenses_branch_date").on(t.branch_id, t.expense_date),
+}])
 
 export const branding_settings = pgTable("branding_settings", {
   id: uuid().primaryKey().defaultRandom(),
@@ -240,7 +255,9 @@ export const blog_posts = pgTable("blog_posts", {
   published_at: text(),
   created_at: text().notNull().default(sql`now()`),
   updated_at: text().notNull().default(sql`now()`),
-})
+}, (t) => [{
+  idx_blog_posts_status: index("idx_blog_posts_status").on(t.status),
+}])
 
 export const nutrition_logs = pgTable("nutrition_logs", {
   id: uuid().primaryKey().defaultRandom(),
@@ -259,7 +276,9 @@ export const nutrition_logs = pgTable("nutrition_logs", {
   notes: text(),
   created_at: text().notNull().default(sql`now()`),
   updated_at: text().notNull().default(sql`now()`),
-})
+}, (t) => [{
+  idx_nutrition_logs_member_date: index("idx_nutrition_logs_member_date").on(t.member_id, t.log_date),
+}])
 
 export const nutrition_targets = pgTable("nutrition_targets", {
   id: uuid().primaryKey().defaultRandom(),
@@ -302,7 +321,9 @@ export const workout_programs = pgTable("workout_programs", {
   is_active: boolean().notNull().default(true),
   created_at: text().notNull().default(sql`now()`),
   updated_at: text().notNull().default(sql`now()`),
-})
+}, (t) => [{
+  idx_workout_programs_member_id: index("idx_workout_programs_member_id").on(t.member_id),
+}])
 
 export const workout_sessions = pgTable("workout_sessions", {
   id: uuid().primaryKey().defaultRandom(),

@@ -66,7 +66,7 @@
 | 8 | OWNER memiliki semua permission      | rolePermissions.OWNER                       | manage_users, manage_roles, manage_branches, manage_branding, manage_members, view_financial, manage_expenses, manage_premium_features, manage_attendance |
 | 9 | SUPER_ADMIN = OWNER permissions      | rolePermissions.SUPER_ADMIN                 | `toEqual(rolePermissions.OWNER)`                                                                                                                        |
 
-## 6. Pure Function Unit Tests (dipertahankan) — 71 Tests
+## 6. Pure Function Unit Tests (dipertahankan) — 55 Tests
 
 | File                                       | Tests        | Coverage                                                                |
 | ------------------------------------------ | ------------ | ----------------------------------------------------------------------- |
@@ -119,14 +119,37 @@
 | `src/components/__tests__/nav-main.test.tsx`              | 5 | All items rendered, label, icons, empty, hrefs                 |
 | `src/components/__tests__/team-switcher.test.tsx`         | 4 | Active team name, plan, empty teams, Dumbbell icon             |
 
+## 10. Database Integration Tests — 16 Tests
+
+| File | Tests | Deskripsi |
+| ---- | ----- | --------- |
+| `src/__tests__/integration/db-users.test.ts` | 4 | Roles, permissions, role_permissions, CRUD user + role |
+| `src/__tests__/integration/db-plans.test.ts` | 4 | Active plans, daily pass, positive price, CRUD plan |
+| `src/__tests__/integration/db-members.test.ts` | 4 | Members, subscriptions, invoices, payments |
+| `src/__tests__/integration/db-branches.test.ts` | 2 | Branch ForgeFit + koordinat operasional valid, branding default |
+| `src/__tests__/integration/db-checkin.test.ts` | 2 | Attendances access + checked-out duration |
+
+Integration DB test mencetak speed setiap query ke stdout dengan format:
+
+```text
+[db-query] payments.list: 115.1ms
+```
+
 ---
 
-**Total: 24 test suites, 191 tests** — semua passing ✅
+**Total: 29 test suites, 212 tests** — semua passing ✅
 
 ### Cara menjalankan
 
 ```bash
-npm test                # semua test (191)
+npm test                # semua test (212), termasuk integration DB jika env Supabase tersedia
+npm run test:integration # database integration + speed query per query
 npm run test:watch      # watch mode
 npm run test:coverage   # dengan coverage report
 ```
+
+### Hasil Verifikasi Terakhir
+
+- `npm run test:integration -- --runInBand`: 5 suites, 16 tests passed.
+- `npm test -- --runInBand`: 29 suites, 212 tests passed.
+- `npm run build`: passed.

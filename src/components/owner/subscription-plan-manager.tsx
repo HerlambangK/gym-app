@@ -57,8 +57,8 @@ export function SubscriptionPlanManager({ plans }: { plans: Plan[] }) {
                   <option value="TRIAL">Trial</option>
                 </select>
               </div>
-              <Field name="durationDays" label="Durasi hari" type="number" defaultValue={String(editing?.duration_days ?? 30)} />
-              <Field name="price" label="Harga" type="number" defaultValue={String(editing?.price ?? 0)} />
+              <Field name="durationDays" label="Durasi (hari)" type="number" min={0} defaultValue={String(editing?.duration_days ?? 30)} />
+              <Field name="price" label="Harga (rupiah)" type="number" min={0} defaultValue={String(editing?.price ?? 0)} />
             </div>
             <div className="grid gap-2">
               <label className="text-sm font-medium">Deskripsi</label>

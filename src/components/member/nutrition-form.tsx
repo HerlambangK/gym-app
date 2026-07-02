@@ -66,18 +66,19 @@ export function NutritionForm({
   const [protein, setProtein] = useState("")
   const [carbs, setCarbs] = useState("")
   const [fat, setFat] = useState("")
+  const [water, setWater] = useState("")
   const [showTarget, setShowTarget] = useState(false)
   const [editingLogId, setEditingLogId] = useState<string | null>(null)
 
   const todayLogs = useMemo(() => logs.filter((log) => log.log_date === today), [logs, today])
   const totals = useMemo(() => summarize(todayLogs), [todayLogs])
-  const defaults = getNutritionDefaults(target)
+  const defaults = useMemo(() => getNutritionDefaults(target), [target])
   const targetCalories = defaults.calories
   const targetProtein = defaults.proteinGram
   const targetCarbs = defaults.carbsGram
   const targetFat = defaults.fatGram
   const targetWater = defaults.waterMl
-  const suggestion = getSuggestion(totals, targetCalories, targetProtein, targetFat)
+  const suggestion = useMemo(() => getSuggestion(totals, targetCalories, targetProtein, targetFat), [totals, targetCalories, targetProtein, targetFat])
 
   useEffect(() => {
     if (!state.message) return
@@ -108,6 +109,7 @@ export function NutritionForm({
     setProtein(log.protein_gram ? String(log.protein_gram) : "")
     setCarbs(log.carbs_gram ? String(log.carbs_gram) : "")
     setFat(log.fat_gram ? String(log.fat_gram) : "")
+    setWater(log.water_ml ? String(log.water_ml) : "")
   }
 
   function clearForm() {
@@ -119,6 +121,7 @@ export function NutritionForm({
     setProtein("")
     setCarbs("")
     setFat("")
+    setWater("")
   }
 
   return (
@@ -208,11 +211,11 @@ export function NutritionForm({
                 <Input name="portion" value={portion} onChange={(event) => setPortion(event.target.value)} placeholder="1 porsi" />
               </div>
               <div className="grid gap-3 sm:grid-cols-5">
-                <Input name="calories" type="number" value={calories} onChange={(event) => setCalories(event.target.value)} placeholder="Kalori" required />
-                <Input name="proteinGram" type="number" value={protein} onChange={(event) => setProtein(event.target.value)} placeholder="Protein" />
-                <Input name="carbsGram" type="number" value={carbs} onChange={(event) => setCarbs(event.target.value)} placeholder="Karbo" />
-                <Input name="fatGram" type="number" value={fat} onChange={(event) => setFat(event.target.value)} placeholder="Lemak" />
-                <Input name="waterMl" type="number" placeholder="Air ml" />
+                <Input name="calories" type="number" min={0} value={calories} onChange={(event) => setCalories(event.target.value)} placeholder="Kalori (kcal)" required />
+                <Input name="proteinGram" type="number" min={0} value={protein} onChange={(event) => setProtein(event.target.value)} placeholder="Protein (gram)" />
+                <Input name="carbsGram" type="number" min={0} value={carbs} onChange={(event) => setCarbs(event.target.value)} placeholder="Karbo (gram)" />
+                <Input name="fatGram" type="number" min={0} value={fat} onChange={(event) => setFat(event.target.value)} placeholder="Lemak (gram)" />
+                <Input name="waterMl" type="number" min={0} value={water} onChange={(event) => setWater(event.target.value)} placeholder="Air (mililiter)" />
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">
@@ -354,7 +357,7 @@ function MiniInput({ name, label, defaultValue }: { name: string; label: string;
   return (
     <div className="grid gap-1">
       <label className="text-xs font-medium text-muted-foreground">{label}</label>
-      <Input name={name} type="number" defaultValue={defaultValue} />
+      <Input name={name} type="number" min={0} defaultValue={defaultValue} />
     </div>
   )
 }

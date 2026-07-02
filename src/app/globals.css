@@ -3,6 +3,13 @@
 @import "shadcn/tailwind.css";
 @import "leaflet/dist/leaflet.css";
 
+.leaflet-container,
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 0;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

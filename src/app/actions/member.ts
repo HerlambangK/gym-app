@@ -161,7 +161,7 @@ const workoutSchema = z.object({
   exerciseType: z.array(z.string().min(2)),
   muscleGroup: z.array(z.string().optional()),
   equipmentRow: z.array(z.string().optional()),
-  sets: z.array(z.coerce.number().int().min(1).max(20)),
+  sets: z.array(z.coerce.number().int().min(0).max(20)),
   reps: z.array(z.string().optional()),
   loadNote: z.array(z.string().optional()),
 })

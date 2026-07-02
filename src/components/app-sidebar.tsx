@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useMemo } from "react"
 import { usePathname } from "next/navigation"
 import { Brain, Dumbbell, LayoutDashboard, Users, CreditCard, Activity, Settings, ShieldCheck, FileText } from "lucide-react"
 import { NavMain } from "@/components/nav-main"
@@ -79,14 +80,14 @@ export function AppSidebar({
   const pathname = usePathname()
   const navItems = navByRole[role] || []
 
-  const data: AppSidebarData = {
+  const data: AppSidebarData = useMemo(() => ({
     teams: [{ name: "ForgeFit Studio", logo: <Dumbbell />, plan: "Gym Management" }],
     navMain: navItems.map((item) => ({
       ...item,
       isActive: pathname === item.url || pathname.startsWith(item.url + "/"),
     })),
     user: { name: userName, email: userEmail },
-  }
+  }), [navItems, pathname, userName, userEmail])
 
   return (
     <Sidebar collapsible="icon" {...props}>

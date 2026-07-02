@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { formatDate, rupiah } from "@/lib/format"
+import { useDebounce } from "@/hooks/use-debounce"
 import { cn } from "@/lib/utils"
 
 type MemberRow = {
@@ -77,12 +78,13 @@ function SearchInput({ value, onChange, placeholder }: { value: string; onChange
 
 export function MemberTable({ members = [] }: { members?: MemberRow[] }) {
   const [search, setSearch] = useState("")
+  const debouncedSearch = useDebounce(search, 200)
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return members
-    const q = search.toLowerCase()
+    if (!debouncedSearch.trim()) return members
+    const q = debouncedSearch.toLowerCase()
     return members.filter((m) => m.name.toLowerCase().includes(q) || m.plan.toLowerCase().includes(q) || m.status.toLowerCase().includes(q))
-  }, [members, search])
+  }, [members, debouncedSearch])
 
   return (
     <Card className="min-w-0 overflow-hidden">
@@ -130,10 +132,11 @@ export function MemberTable({ members = [] }: { members?: MemberRow[] }) {
 
 export function InvoiceTable({ invoices = [] }: { invoices?: InvoiceRow[] }) {
   const [search, setSearch] = useState("")
+  const debouncedSearch = useDebounce(search, 200)
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return invoices
-    const q = search.toLowerCase()
+    if (!debouncedSearch.trim()) return invoices
+    const q = debouncedSearch.toLowerCase()
     return invoices.filter(
       (inv) =>
         inv.number.toLowerCase().includes(q) ||
@@ -141,7 +144,7 @@ export function InvoiceTable({ invoices = [] }: { invoices?: InvoiceRow[] }) {
         inv.plan.toLowerCase().includes(q) ||
         inv.status.toLowerCase().includes(q),
     )
-  }, [invoices, search])
+  }, [invoices, debouncedSearch])
 
   return (
     <Card className="min-w-0 overflow-hidden">

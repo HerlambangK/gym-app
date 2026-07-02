@@ -30,7 +30,7 @@ export function CheckInPanel({
   const [active, setActive] = useState(Boolean(initialActiveSession))
   const [status, setStatus] = useState(
     initialActiveSession
-      ? "Sesi latihan aktif — check-out setelah selesai."
+      ? "Sesi latihan aktif. Selesaikan latihan saat sudah selesai, lokasi gym tidak wajib untuk menutup sesi."
       : isAdminMode
         ? "Mode admin memakai titik cabang sebagai referensi."
         : "Ready for check-in",
@@ -218,11 +218,11 @@ export function CheckInPanel({
       if (res.ok) {
         setActive(false)
         setDurationSec(0)
-        setStatus(`Check-out berhasil. Durasi latihan: ${data.durationMinutes} menit.`)
-        toast.success("Check-out berhasil")
+        setStatus(`Latihan selesai. Durasi latihan: ${data.durationMinutes} menit.`)
+        toast.success("Latihan selesai")
       } else {
-        setStatus(data.error || "Check-out gagal")
-        toast.error(data.error || "Check-out gagal")
+        setStatus(data.error || "Gagal menyelesaikan latihan")
+        toast.error(data.error || "Gagal menyelesaikan latihan")
       }
     } catch {
       setStatus("Gangguan jaringan. Silakan coba lagi.")
@@ -261,7 +261,7 @@ export function CheckInPanel({
     : !inRange
       ? `Anda masih di luar radius ${branchRadius}m dari gym`
       : active
-        ? "Sesi check-in sedang aktif"
+        ? "Sesi latihan sedang aktif"
         : null
 
   return (
@@ -304,7 +304,7 @@ export function CheckInPanel({
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <CardTitle>{isAdminMode ? "Validasi Lokasi Cabang" : active ? "Sesi latihan aktif" : "Check-in"}</CardTitle>
+              <CardTitle>{isAdminMode ? "Validasi Lokasi Cabang" : active ? "Sesi latihan aktif" : "Mulai latihan"}</CardTitle>
               <CardDescription>{status}</CardDescription>
             </div>
             <Badge variant={active ? "success" : locationError ? "muted" : !location ? "muted" : inRange ? "success" : "warning"}>
@@ -370,10 +370,10 @@ export function CheckInPanel({
           ) : (
             <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
               <Button className="h-10" onClick={handleCheckIn} disabled={active || loading || !inRange || !location}>
-                {loading ? "Memproses..." : "Check-in Sekarang"}
+                {loading ? "Memproses..." : "Mulai Latihan"}
               </Button>
               <Button className="h-10" variant="outline" onClick={handleCheckOut} disabled={!active || loading}>
-                Check-out
+                Selesaikan Latihan
               </Button>
               <Button variant="ghost" onClick={() => requestLocation()} disabled={gpsLoading || loading} className="h-10 gap-2">
                 <RotateCcw size={15} />
@@ -399,7 +399,7 @@ export function CheckInPanel({
                 radiusMeters={branch.radiusMeters}
               />
               <p className="text-sm text-muted-foreground">
-                Check-in valid saat posisi Anda berada dalam radius {branch.radiusMeters} meter dari titik cabang.
+                Mulai latihan wajib berada dalam radius {branch.radiusMeters} meter dari titik cabang. Selesaikan latihan bisa dilakukan dari luar area gym.
               </p>
             </>
           ) : (

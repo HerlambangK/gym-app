@@ -5,6 +5,7 @@ import { getMemberByUserId } from "@/lib/db/members"
 import { getActiveSubscription, getCurrentAndUpcomingSubscriptions, getSubscriptionExpiryInfo } from "@/lib/db/subscriptions"
 import { getActiveSession, getMemberAttendances } from "@/lib/db/attendances"
 import { getDefaultBranch } from "@/lib/db/branches"
+import { getActiveWorkoutProgram } from "@/lib/db/workouts"
 import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { redirect } from "next/navigation"
 import { formatDate } from "@/lib/format"
+import { SubscriptionExpiryDialog } from "@/components/member/subscription-expiry-dialog"
 
 export default async function Page() {
   const supabase = await createServerSupabaseClient()
@@ -24,16 +26,19 @@ export default async function Page() {
   const activeSession = member ? await getActiveSession(member.id) : null
   const recentAttendances = member ? await getMemberAttendances(member.id, 4) : []
   const subStack = member ? await getCurrentAndUpcomingSubscriptions(member.id) : { current: null, upcoming: [] }
+  const workoutProgram = member ? await getActiveWorkoutProgram(member.id) : null
 
   const expiryInfo = getSubscriptionExpiryInfo(subscription)
   const remainingDays = expiryInfo.remainingDays
-  const progress = subscription
-    ? Math.min(100, Math.round((remainingDays / (subscription.membership_plans?.duration_days || 30)) * 100))
-    : 0
+  const membershipTiming = subscription
+    ? getMembershipTiming(subscription.start_date, subscription.end_date, subscription.membership_plans?.duration_days || 30)
+    : null
+  const progress = membershipTiming?.remainingProgress ?? 0
   const isPremium = member?.member_type === "PREMIUM" || (Boolean(subscription) && subscription?.membership_plans?.code !== "DAILY_PASS")
   const planName = (subscription?.membership_plans as { name?: string } | null)?.name || "Subscription"
   const completedSessions = recentAttendances.filter((item) => item.status === "CHECKED_OUT" || item.status === "AUTO_CHECKED_OUT").length
   const totalMinutes = recentAttendances.reduce((sum, item) => sum + Number(item.duration_minutes || 0), 0)
+  const workoutStats = getWorkoutStats(workoutProgram)
 
   return (
     <div className="space-y-6">
@@ -45,12 +50,20 @@ export default async function Page() {
         actions={
           <Link href="/member/check-in">
             <Button className="gap-2">
-              Check-in Gym
+              {activeSession ? "Sesi Latihan" : "Check-in Gym"}
               <ArrowRight size={16} />
             </Button>
           </Link>
         }
       />
+
+      {subscription ? (
+        <SubscriptionExpiryDialog
+          subscriptionId={subscription.id}
+          planName={planName}
+          endDate={subscription.end_date}
+        />
+      ) : null}
 
       {subscription && expiryInfo.isExpiringSoon ? (
         <div className={`rounded-xl border p-4 text-sm ${
@@ -64,7 +77,7 @@ export default async function Page() {
                 {expiryInfo.isCritical ? "Subscription akan segera berakhir!" : "Subscription akan berakhir"}
               </p>
               <p className="mt-1">
-                {planName} aktif sampai {formatDate(subscription.end_date)} ({remainingDays} hari lagi).
+                {planName} aktif sampai {formatDate(subscription.end_date)} ({membershipTiming?.countdownLabel || `${remainingDays} hari lagi`}).
               </p>
             </div>
             <Link href="/member/billing">
@@ -104,9 +117,17 @@ export default async function Page() {
             <p className="text-2xl font-semibold tracking-tight">{activeSession ? "Sedang aktif" : "Belum check-in"}</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {activeSession
-                ? `Mulai ${new Date(activeSession.check_in_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}. Check-out dari halaman check-in.`
+                ? `Mulai ${new Date(activeSession.check_in_time).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}. Selesaikan latihan dari halaman sesi.`
                 : "Mulai sesi saat tiba di area gym."}
             </p>
+            {activeSession ? (
+              <Link href="/member/check-in" className="mt-4 block">
+                <Button size="sm" variant="outline" className="w-full justify-between">
+                  Sesi Latihan
+                  <ArrowRight size={14} />
+                </Button>
+              </Link>
+            ) : null}
           </CardContent>
         </Card>
         <Card className="overflow-hidden">
@@ -119,7 +140,7 @@ export default async function Page() {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-semibold tracking-tight">{subscription ? `${remainingDays} hari` : "-"}</p>
+            <p className="text-2xl font-semibold tracking-tight">{membershipTiming?.shortLabel || "-"}</p>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {subscription ? `${planName} sampai ${formatDate(subscription.end_date)}.` : "Aktifkan paket untuk mulai memakai akses gym."}
             </p>
@@ -186,16 +207,20 @@ export default async function Page() {
                 <div className="max-w-xl">
                   <div className="mb-2 flex justify-between text-sm">
                     <span className={expiryInfo.isCritical ? "font-semibold text-red-600 dark:text-red-400" : ""}>
-                      Sisa hari
+                      {planName}
                     </span>
                     <span className={expiryInfo.isCritical ? "font-semibold text-red-600 dark:text-red-400" : ""}>
-                      {remainingDays} hari
+                      {membershipTiming?.countdownLabel || `${remainingDays} hari lagi`}
                     </span>
                   </div>
                   <Progress
                     value={progress}
                     className={expiryInfo.isCritical ? "bg-red-200 [&>div]:bg-red-500" : expiryInfo.isExpiringSoon ? "bg-amber-200 [&>div]:bg-amber-500" : ""}
                   />
+                  <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                    <span>Mulai {formatDate(subscription.start_date)}</span>
+                    <span>Sisa {progress}%</span>
+                  </div>
                 </div>
 
                 {subStack.upcoming.length > 0 ? (
@@ -296,7 +321,7 @@ export default async function Page() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="grid gap-2 sm:grid-cols-2">
+          <CardContent className="grid gap-2 sm:grid-cols-2">
               <Link href="/member/nutrition">
                 <Button variant="outline" className="w-full justify-between">
                   Catat nutrisi
@@ -311,8 +336,99 @@ export default async function Page() {
               </Link>
             </CardContent>
           </Card>
+          <Card className="min-w-0">
+            <CardHeader>
+              <CardTitle>Progress Workout</CardTitle>
+              <CardDescription>{workoutStats.title}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-3 gap-2">
+                <MiniWorkoutStat label="Hari" value={String(workoutStats.days)} />
+                <MiniWorkoutStat label="Latihan" value={String(workoutStats.exercises)} />
+                <MiniWorkoutStat label="Set" value={String(workoutStats.sets)} />
+              </div>
+              <div>
+                <div className="mb-2 flex justify-between text-sm">
+                  <span>Balance program</span>
+                  <span className="font-medium">{workoutStats.balance}%</span>
+                </div>
+                <Progress value={workoutStats.balance} />
+              </div>
+              <Link href="/member/workouts">
+                <Button variant="outline" className="w-full justify-between">
+                  Lihat calendar latihan
+                  <ArrowRight size={15} />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
   )
+}
+
+function getWorkoutStats(program: Awaited<ReturnType<typeof getActiveWorkoutProgram>>) {
+  const sessions = program?.workout_sessions ?? []
+  const exercises = sessions.flatMap((session) => session.workout_exercises ?? [])
+  const muscleCount = new Set(exercises.map((exercise) => {
+    const note = exercise.load_note || ""
+    const muscle = note.split("|").find((item) => item.startsWith("muscle:"))?.replace("muscle:", "")
+    return muscle || exercise.exercise_type || "General"
+  })).size
+
+  return {
+    title: program?.title || "Belum ada program aktif",
+    days: sessions.length,
+    exercises: exercises.length,
+    sets: exercises.reduce((sum, exercise) => sum + Number(exercise.sets || 0), 0),
+    balance: exercises.length ? Math.min(100, Math.round((muscleCount / 8) * 100)) : 0,
+  }
+}
+
+function MiniWorkoutStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-lg border border-border p-3 text-center">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-lg font-semibold tabular-nums">{value}</p>
+    </div>
+  )
+}
+
+function getMembershipTiming(startDate: string, endDate: string, fallbackDurationDays: number) {
+  const now = Date.now()
+  const startAt = new Date(`${startDate}T00:00:00`).getTime()
+  const endAt = new Date(`${endDate}T23:59:59`).getTime()
+  const totalMs = Math.max(1, endAt - startAt)
+  const remainingMs = Math.max(0, endAt - now)
+  const remainingProgress = Math.min(100, Math.max(0, Math.round((remainingMs / totalMs) * 100)))
+  const durationDays = Math.max(1, Math.round(totalMs / 86400000) || fallbackDurationDays)
+  const countdownLabel = `${formatRemainingMembership(remainingMs, durationDays)} lagi`
+  const shortLabel = durationDays <= 1
+    ? formatDailyCountdown(remainingMs)
+    : formatRemainingMembership(remainingMs, durationDays)
+
+  return { remainingProgress, countdownLabel, shortLabel }
+}
+
+function formatRemainingMembership(ms: number, durationDays: number) {
+  const totalDays = Math.max(0, Math.ceil(ms / 86400000))
+  if (durationDays <= 1) return formatDailyCountdown(ms)
+  const months = Math.floor(totalDays / 30)
+  const weeks = Math.floor((totalDays % 30) / 7)
+  const days = totalDays % 7
+  const parts = [
+    months ? `${months} bulan` : "",
+    weeks ? `${weeks} minggu` : "",
+    days ? `${days} hari` : "",
+  ].filter(Boolean)
+  return parts.length ? parts.join(" ") : formatDailyCountdown(ms)
+}
+
+function formatDailyCountdown(ms: number) {
+  const totalMinutes = Math.max(0, Math.floor(ms / 60000))
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours > 0) return `${hours} jam ${minutes} menit`
+  return `${minutes} menit`
 }
