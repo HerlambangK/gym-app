@@ -1,4 +1,4 @@
-import { eq, asc } from "drizzle-orm"
+import { asc, eq } from "drizzle-orm"
 import { db } from "@/lib/drizzle"
 import { membership_plans, planTypeEnum } from "@/db/schema"
 import { membershipPlans } from "@/data/gym"
@@ -89,7 +89,7 @@ export async function upsertPlan(input: {
   if (input.id) {
     const [data] = await db
       .update(membership_plans)
-      .set({ ...values, id: input.id })
+      .set(values)
       .where(eq(membership_plans.id, input.id))
       .returning()
     return data
@@ -98,14 +98,25 @@ export async function upsertPlan(input: {
   const [data] = await db
     .insert(membership_plans)
     .values(values)
-    .onConflictDoUpdate({ target: membership_plans.code, set: values })
     .returning()
   return data
 }
 
 export async function setPlanActive(id: string, isActive: boolean) {
-  await db
+  const [data] = await db
     .update(membership_plans)
     .set({ is_active: isActive, updated_at: new Date().toISOString() })
     .where(eq(membership_plans.id, id))
+    .returning()
+
+  return data || null
+}
+
+export async function deletePlan(id: string) {
+  const [data] = await db
+    .delete(membership_plans)
+    .where(eq(membership_plans.id, id))
+    .returning()
+
+  return data || null
 }

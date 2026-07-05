@@ -1,4 +1,4 @@
-import { eq, and, isNull, desc, gte, count, lte } from "drizzle-orm"
+import { eq, and, isNull, desc, gte, count, lt } from "drizzle-orm"
 import { db } from "@/lib/drizzle"
 import { attendances, branches, members, users } from "@/db/schema"
 
@@ -99,6 +99,31 @@ export async function getAllAttendances(limit = 50) {
     .leftJoin(members, eq(attendances.member_id, members.id))
     .leftJoin(users, eq(members.user_id, users.id))
     .leftJoin(branches, eq(attendances.branch_id, branches.id))
+    .orderBy(desc(attendances.check_in_time))
+    .limit(limit)
+
+  return rows.map((row) => ({
+    id: row.attendances.id,
+    check_in_time: row.attendances.check_in_time,
+    check_out_time: row.attendances.check_out_time,
+    duration_minutes: row.attendances.duration_minutes,
+    status: row.attendances.status,
+    members: row.members ? { users: { name: row.users?.name } } : null,
+    branches: row.branches ? { name: row.branches.name } : null,
+  }))
+}
+
+export async function getAttendancesByDate(startIso: string, endIso: string, limit = 200) {
+  const rows = await db
+    .select()
+    .from(attendances)
+    .leftJoin(members, eq(attendances.member_id, members.id))
+    .leftJoin(users, eq(members.user_id, users.id))
+    .leftJoin(branches, eq(attendances.branch_id, branches.id))
+    .where(and(
+      gte(attendances.check_in_time, startIso),
+      lt(attendances.check_in_time, endIso),
+    ))
     .orderBy(desc(attendances.check_in_time))
     .limit(limit)
 

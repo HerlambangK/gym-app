@@ -1,13 +1,15 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { getUserRole } from "@/lib/db/users"
-import { getAllAttendances } from "@/lib/db/attendances"
+import { getAttendancesByDate } from "@/lib/db/attendances"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { AttendanceChart } from "@/components/charts/revenue-chart"
 import { DashboardPageHeader } from "@/components/dashboard/page-header"
-import { Activity, Clock, MapPin, Timer, User, Wifi } from "lucide-react"
+import { Activity, CalendarDays, Clock, MapPin, Search, Timer, User, Wifi } from "lucide-react"
 
 type AttendanceRow = {
   id: string
@@ -37,6 +39,42 @@ function formatDateTime(dateStr: string): string {
   })
 }
 
+function getJakartaDateInput(date = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Jakarta",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date)
+}
+
+function isValidDateInput(value: string | undefined) {
+  return Boolean(value && /^\d{4}-\d{2}-\d{2}$/.test(value))
+}
+
+function getDayRange(dateInput: string) {
+  const start = new Date(`${dateInput}T00:00:00+07:00`)
+  const end = new Date(start)
+  end.setUTCDate(end.getUTCDate() + 1)
+  return { startIso: start.toISOString(), endIso: end.toISOString() }
+}
+
+function formatDateLabel(dateInput: string) {
+  return new Date(`${dateInput}T00:00:00+07:00`).toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone: "Asia/Jakarta",
+  })
+}
+
+function shiftDateInput(dateInput: string, days: number) {
+  const date = new Date(`${dateInput}T00:00:00+07:00`)
+  date.setUTCDate(date.getUTCDate() + days)
+  return getJakartaDateInput(date)
+}
+
 function statusBadge(status: string) {
   const map: Record<string, { label: string; variant: "success" | "warning" | "muted" | "default" }> = {
     ACTIVE: { label: "Aktif", variant: "success" },
@@ -49,7 +87,20 @@ function statusBadge(status: string) {
   return <Badge variant={cfg.variant}>{cfg.label}</Badge>
 }
 
-export default async function Page() {
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: Promise<{ date?: string }>
+}) {
+  const resolvedSearchParams = await searchParams
+  const selectedDate = isValidDateInput(resolvedSearchParams?.date)
+    ? resolvedSearchParams?.date as string
+    : getJakartaDateInput()
+  const { startIso, endIso } = getDayRange(selectedDate)
+  const selectedDateLabel = formatDateLabel(selectedDate)
+  const previousDate = shiftDateInput(selectedDate, -1)
+  const nextDate = shiftDateInput(selectedDate, 1)
+
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
@@ -57,7 +108,7 @@ export default async function Page() {
   const role = await getUserRole(user.id)
   if (role !== "OWNER" && role !== "SUPER_ADMIN") redirect("/member/dashboard")
 
-  const data = await getAllAttendances(20)
+  const data = await getAttendancesByDate(startIso, endIso)
   const attendances: AttendanceRow[] = data.map((att: Record<string, unknown>) => {
     const a = att as {
       id: string; check_in_time: string; check_out_time: string | null;
@@ -80,17 +131,55 @@ export default async function Page() {
     <div className="space-y-6">
       <DashboardPageHeader
         eyebrow="Owner"
-        status={`${attendances.length} sesi terbaru`}
+        status={`${attendances.length} sesi pada ${selectedDateLabel}`}
         title="Attendance dan Kepadatan Gym"
-        description="Lihat aktivitas check-in, durasi latihan, dan aturan validasi yang menjaga operasional tetap tertib."
+        description="Lihat aktivitas check-in per hari, durasi latihan, dan aturan validasi yang menjaga operasional tetap tertib."
       />
       <AttendanceChart />
+      <Card>
+        <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-6">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              Filter hari sesi latihan
+            </div>
+            <p className="text-3xl font-semibold tabular-nums">{attendances.length}</p>
+            <p className="text-sm text-muted-foreground">Jumlah sesi latihan pada {selectedDateLabel}</p>
+          </div>
+          <div className="flex flex-col gap-3 sm:items-end">
+            <form className="flex flex-col gap-2 sm:flex-row" action="/owner/attendances">
+              <label htmlFor="attendance-date" className="sr-only">Tanggal attendance</label>
+              <input
+                id="attendance-date"
+                name="date"
+                type="date"
+                defaultValue={selectedDate}
+                className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              />
+              <Button type="submit" className="gap-2">
+                <Search className="h-4 w-4" /> Tampilkan
+              </Button>
+            </form>
+            <div className="flex flex-wrap gap-2">
+              <Link href={`/owner/attendances?date=${previousDate}`}>
+                <Button type="button" variant="outline" size="sm">Kemarin</Button>
+              </Link>
+              <Link href={`/owner/attendances?date=${getJakartaDateInput()}`}>
+                <Button type="button" variant="outline" size="sm">Hari ini</Button>
+              </Link>
+              <Link href={`/owner/attendances?date=${nextDate}`}>
+                <Button type="button" variant="outline" size="sm">Besok</Button>
+              </Link>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
           <div className="flex items-center gap-2">
             <Activity className="h-5 w-5 text-muted-foreground" />
             <CardTitle>Riwayat Attendance</CardTitle>
-            <span className="ml-1 text-sm text-muted-foreground">({attendances.length})</span>
+            <span className="ml-1 text-sm text-muted-foreground">({attendances.length} sesi)</span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -114,8 +203,8 @@ export default async function Page() {
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                         <Activity className="h-6 w-6 text-muted-foreground" />
                       </div>
-                      <p className="text-sm">Belum ada riwayat attendance</p>
-                      <p className="text-xs text-muted-foreground/60">Data akan muncul setelah member check-in</p>
+                      <p className="text-sm">Belum ada sesi latihan pada {selectedDateLabel}</p>
+                      <p className="text-xs text-muted-foreground/60">Pilih tanggal lain atau tunggu member check-in.</p>
                     </div>
                   </TableCell>
                 </TableRow>
