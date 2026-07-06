@@ -10,10 +10,13 @@ export const brand = {
 };
 
 export const navItems = [
+  { label: "Beranda", href: "/" },
+  { label: "Tentang", href: "/tentang-kami" },
+  { label: "Fasilitas", href: "/fasilitas" },
+  { label: "Alat Gym", href: "/alat-gym" },
+  { label: "Galeri", href: "/galeri" },
   { label: "Paket", href: "/pricing" },
-  { label: "Fasilitas", href: "/#facilities" },
-  { label: "Trainer", href: "/#trainers" },
-  { label: "Blog", href: "/blog" },
+  { label: "Lokasi", href: "/lokasi" },
   { label: "Kontak", href: "/contact" },
 ];
 
@@ -157,4 +160,3 @@ export const blogPosts = [
   { title: "Meal Prep 7 Hari untuk Member Plus", access: "SUBSCRIBER_ONLY", minutes: 8 },
   { title: "Latihan Push Pull Legs untuk Fase Cutting", access: "SUBSCRIBER_ONLY", minutes: 10 },
 ];
-

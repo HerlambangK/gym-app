@@ -2,18 +2,19 @@ import type { Metadata } from "next";
 import { Toaster } from "sonner";
 import { FaviconSwitcher } from "@/components/favicon-switcher";
 import { getBrandingSettings } from "@/lib/db/branding";
+import { gymProfile } from "@/data/company-profile";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const branding = await getBrandingSettings()
+  const branding = await getBrandingSettings().catch(() => null)
 
   const title = branding?.brand_name
-    ? `${branding.brand_name} | Gym Management`
-    : "ForgeFit Studio | Gym Management"
+    ? `${branding.brand_name} | Gym Lengkap dan Nyaman di ${gymProfile.city}`
+    : `${gymProfile.name} | Gym Lengkap dan Nyaman di ${gymProfile.city}`
 
   const description = branding?.tagline
-    || "Fullstack gym management system with RBAC, billing, attendance, and premium membership features."
+    || `${gymProfile.name} adalah tempat fitness modern dengan alat gym lengkap, fasilitas nyaman, dan lokasi strategis di ${gymProfile.city}.`
 
   const icons: Metadata["icons"] = branding?.favicon_url
     ? { icon: [{ url: branding.favicon_url, sizes: "any" }] }

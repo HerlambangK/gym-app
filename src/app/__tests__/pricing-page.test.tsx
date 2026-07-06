@@ -102,31 +102,30 @@ describe("Halaman Pricing (/(public)/pricing)", () => {
       expect(screen.getByTestId("site-header")).toBeInTheDocument()
     })
 
-    it("2. menampilkan badge Membership", async () => {
+    it("2. menampilkan badge Paket Member", async () => {
       await renderPage()
-      expect(screen.getByText("Membership")).toBeInTheDocument()
+      expect(screen.getByText("Paket Member")).toBeInTheDocument()
     })
 
     it("3. menampilkan heading h1 yang benar", async () => {
       await renderPage()
       expect(
         screen.getByRole("heading", {
-          name: "Pilih paket yang tepat untuk Anda.",
+          name: "Paket fleksibel untuk mulai latihan.",
           level: 1,
         }),
       ).toBeInTheDocument()
     })
 
-    it("4. menampilkan semua paket dengan nama dan deskripsi", async () => {
+    it("4. menampilkan semua paket dengan nama dan durasi", async () => {
       await renderPage()
       for (const plan of mockPlans) {
         expect(screen.getByText(plan.name)).toBeInTheDocument()
-        expect(screen.getByText(plan.description)).toBeInTheDocument()
-        expect(screen.getAllByText(`${plan.duration_days} hari`).length).toBeGreaterThanOrEqual(1)
+        expect(screen.getAllByText(`${plan.duration_days} hari akses`).length).toBeGreaterThanOrEqual(1)
       }
     })
 
-    it("5. menampilkan harga dalam format Rupiah", async () => {
+    it("5. hanya menampilkan harga Daily Pass untuk user publik", async () => {
       await renderPage()
       const fmt = (n: number) =>
         new Intl.NumberFormat("id-ID", {
@@ -135,24 +134,23 @@ describe("Halaman Pricing (/(public)/pricing)", () => {
           maximumFractionDigits: 0,
         }).format(n)
       const priceTexts = screen.getAllByText(/^Rp/)
-      expect(priceTexts).toHaveLength(mockPlans.length)
+      expect(priceTexts).toHaveLength(1)
       const prices = priceTexts.map((el) => el.textContent)
       expect(prices).toContain(fmt(45000))
-      expect(prices).toContain(fmt(449000))
-      expect(prices).toContain(fmt(299000))
-      expect(prices).toContain(fmt(1199000))
+      expect(prices).not.toContain(fmt(449000))
+      expect(prices).not.toContain(fmt(299000))
+      expect(prices).not.toContain(fmt(1199000))
     })
 
-    it("6. menampilkan tombol Daftar (link) di setiap kartu paket", async () => {
+    it("6. menampilkan CTA login untuk paket selain Daily Pass", async () => {
       await renderPage()
-      const daftarLinks = screen.getAllByRole("link", { name: /daftar/i })
-      expect(daftarLinks).toHaveLength(mockPlans.length)
-      daftarLinks.forEach((link) => {
-        expect(link).toHaveAttribute("href", "/?action=register")
-      })
+      expect(screen.getByRole("link", { name: /ambil daily pass/i })).toHaveAttribute("href", expect.stringContaining("https://wa.me/"))
+      const loginLinks = screen.getAllByRole("link", { name: /login untuk lihat harga/i })
+      expect(loginLinks).toHaveLength(mockPlans.length - 1)
+      loginLinks.forEach((link) => expect(link).toHaveAttribute("href", "/?action=login"))
     })
 
-    it("7. paket PLUS_MONTHLY mendapat class border-primary", async () => {
+    it("7. paket PLUS_MONTHLY mendapat class border-red-600", async () => {
       await renderPage()
       const cardHeadings = screen.getAllByRole("heading", { level: 3 })
       const plusMonthlyCard = cardHeadings.find(
@@ -161,14 +159,14 @@ describe("Halaman Pricing (/(public)/pricing)", () => {
       expect(plusMonthlyCard).toBeDefined()
 
       const cardDiv = plusMonthlyCard!.closest('[class*="rounded-lg"]')
-      expect(cardDiv?.className).toContain("border-primary")
+      expect(cardDiv?.className).toContain("border-red-600")
     })
 
-    it("8. paket non-populer tidak mendapat border-primary", async () => {
+    it("8. paket non-populer tidak mendapat border-red-600", async () => {
       await renderPage()
       const dailyCard = screen.getByText("Daily Pass")
         .closest('[class*="rounded-lg"]')
-      expect(dailyCard?.className).not.toContain("border-primary")
+      expect(dailyCard?.className).not.toContain("border-red-600")
     })
   })
 
@@ -190,10 +188,10 @@ describe("Halaman Pricing (/(public)/pricing)", () => {
       expect(codes).toEqual(mockPlans.map((p) => p.code))
     })
 
-    it("11. tidak menampilkan tombol Daftar saat sudah login", async () => {
+    it("11. tidak menampilkan CTA login saat sudah login", async () => {
       await renderPage()
       expect(
-        screen.queryByRole("link", { name: /daftar/i }),
+        screen.queryByRole("link", { name: /login untuk lihat harga/i }),
       ).not.toBeInTheDocument()
     })
   })
@@ -213,7 +211,7 @@ describe("Halaman Pricing (/(public)/pricing)", () => {
       expect(screen.queryByText("Daily Pass")).not.toBeInTheDocument()
       expect(screen.queryByText("Subscribe")).not.toBeInTheDocument()
       expect(
-        screen.queryByRole("link", { name: /daftar/i }),
+        screen.queryByRole("link", { name: /login untuk lihat harga/i }),
       ).not.toBeInTheDocument()
     })
 

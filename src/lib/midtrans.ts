@@ -156,12 +156,19 @@ export async function cancelTransaction(orderId: string) {
   };
 }
 
+type PaymentLifecycle = {
+  isSuccess: boolean;
+  isFailure: boolean;
+  paymentStatus: "PAID" | "FAILED" | "PENDING";
+  invoiceStatus: "PAID" | "EXPIRED" | "CANCELLED" | "FAILED" | "PENDING";
+};
+
 export function getPaymentLifecycle(payload: {
   transaction_status?: string;
   fraud_status?: string;
   status_code?: string;
   settlement_time?: string;
-}) {
+}): PaymentLifecycle {
   const transactionStatus = payload.transaction_status?.toLowerCase();
   const fraudStatus = payload.fraud_status?.toLowerCase();
   const hasSettlementProof = payload.status_code === "200" && Boolean(payload.settlement_time);
@@ -175,7 +182,7 @@ export function getPaymentLifecycle(payload: {
     transactionStatus === "cancel" ||
     transactionStatus === "expire" ||
     transactionStatus === "failure";
-  const failureInvoiceStatus =
+  const failureInvoiceStatus: PaymentLifecycle["invoiceStatus"] =
     transactionStatus === "expire" ? "EXPIRED" :
       transactionStatus === "cancel" ? "CANCELLED" :
         "FAILED";

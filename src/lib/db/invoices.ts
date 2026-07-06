@@ -1,6 +1,9 @@
 import { eq, and, desc, inArray, gte, isNotNull } from "drizzle-orm"
 import { db } from "@/lib/drizzle"
-import { invoices, members, users, membership_plans, payments } from "@/db/schema"
+import { invoices, members, users, membership_plans, payments, subscriptions } from "@/db/schema"
+
+type InvoiceInsert = typeof invoices.$inferInsert
+type InvoiceStatus = NonNullable<InvoiceInsert["status"]>
 
 export async function createInvoice(input: {
   memberId: string
@@ -8,6 +11,7 @@ export async function createInvoice(input: {
   amount: number
 }) {
   const invoiceNumber = `INV-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${Date.now().toString(36).toUpperCase()}`
+  const paymentDeadline = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
   const [data] = await db
     .insert(invoices)
     .values({
@@ -16,6 +20,7 @@ export async function createInvoice(input: {
       plan_id: input.planId,
       amount: input.amount,
       status: "PENDING",
+      expired_at: paymentDeadline,
     })
     .returning()
   return data
@@ -38,7 +43,7 @@ export async function getInvoiceByNumber(number: string) {
 export async function getMemberInvoices(memberId: string, activeOnly = false) {
   const conditions = [eq(invoices.member_id, memberId)]
   if (activeOnly) {
-    conditions.push(inArray(invoices.status, ["PAID", "PENDING"] as any))
+    conditions.push(inArray(invoices.status, ["PAID", "PENDING"]))
   }
 
   const rows = await db
@@ -46,6 +51,7 @@ export async function getMemberInvoices(memberId: string, activeOnly = false) {
     .from(invoices)
     .innerJoin(membership_plans, eq(invoices.plan_id, membership_plans.id))
     .leftJoin(payments, eq(invoices.id, payments.invoice_id))
+    .leftJoin(subscriptions, eq(invoices.id, subscriptions.invoice_id))
     .where(and(...conditions))
     .orderBy(desc(invoices.created_at))
 
@@ -59,12 +65,15 @@ export async function getMemberInvoices(memberId: string, activeOnly = false) {
     payments: row.payments
       ? { status: row.payments.status, method: row.payments.method, raw_callback: row.payments.raw_callback }
       : null,
+    subscriptions: row.subscriptions
+      ? { status: row.subscriptions.status, start_date: row.subscriptions.start_date, end_date: row.subscriptions.end_date }
+      : null,
   }))
 }
 
-export async function getAllInvoices(options?: { limit?: number; offset?: number; status?: string }) {
+export async function getAllInvoices(options?: { limit?: number; offset?: number; status?: InvoiceStatus }) {
   const conditions = [isNotNull(invoices.id)]
-  if (options?.status) conditions.push(eq(invoices.status, options.status as any))
+  if (options?.status) conditions.push(eq(invoices.status, options.status))
 
   const query = db
     .select()
@@ -90,8 +99,11 @@ export async function getAllInvoices(options?: { limit?: number; offset?: number
   }))
 }
 
-export async function updateInvoiceStatus(id: string, status: string) {
-  await db.update(invoices).set({ status: status as any }).where(eq(invoices.id, id))
+export async function updateInvoiceStatus(id: string, status: InvoiceStatus) {
+  await db
+    .update(invoices)
+    .set({ status, updated_at: new Date().toISOString() })
+    .where(eq(invoices.id, id))
 }
 
 export async function getInvoiceStats() {
@@ -104,7 +116,7 @@ export async function getInvoiceStats() {
     .from(invoices)
     .where(
       and(
-        inArray(invoices.status, ["PAID", "PENDING"] as any),
+        inArray(invoices.status, ["PAID", "PENDING"]),
         gte(invoices.created_at, startOfMonth.toISOString()),
       ),
     )

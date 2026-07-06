@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
 import { membershipPlans } from "@/data/gym";
+import { gymProfile, whatsappUrl } from "@/data/company-profile";
 
 export function RegisterCard() {
   return (
@@ -33,14 +35,22 @@ export function ContactCard() {
     <Card>
       <CardHeader>
         <CardTitle>Kontak Gym</CardTitle>
-        <CardDescription>Kirim pertanyaan membership, promo, atau corporate plan.</CardDescription>
+        <CardDescription>Kirim pertanyaan membership, harga, lokasi, atau personal trainer.</CardDescription>
       </CardHeader>
       <CardContent>
         <form className="grid gap-4">
           <Input placeholder="Nama" />
-          <Input type="email" placeholder="Email" />
-          <Textarea placeholder="Pesan" />
-          <Button type="button">Kirim Pesan</Button>
+          <Input placeholder="Nomor WhatsApp" />
+          <select className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+            <option>Daftar member</option>
+            <option>Tanya harga</option>
+            <option>Tanya lokasi</option>
+            <option>Tanya trainer</option>
+          </select>
+          <Textarea placeholder={`Halo ${gymProfile.name}, saya ingin bertanya tentang...`} />
+          <Link href={whatsappUrl()} className="w-full">
+            <Button type="button" className="w-full bg-red-600 text-white hover:bg-red-700">Kirim via WhatsApp</Button>
+          </Link>
         </form>
       </CardContent>
     </Card>

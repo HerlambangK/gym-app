@@ -14,6 +14,9 @@ type BillingInvoice = {
   method: string
   durationDays: number
   createdAt: string
+  subscriptionStatus?: string | null
+  subscriptionStartDate?: string | null
+  subscriptionEndDate?: string | null
   paymentResult?: NativePaymentResult | null
 }
 
@@ -39,6 +42,20 @@ function methodLabel(method: string) {
 function StatusBadge({ status }: { status: string }) {
   const variant = status === "PAID" ? "success" : status === "PENDING" ? "warning" : "muted"
   return <Badge variant={variant}>{statusLabel[status] || status}</Badge>
+}
+
+function subscriptionWindowLabel(invoice: BillingInvoice) {
+  if (invoice.subscriptionStartDate && invoice.subscriptionEndDate) {
+    const prefix = invoice.subscriptionStatus === "ACTIVE"
+      ? "Akses"
+      : invoice.subscriptionStatus === "EXPIRED"
+        ? "Habis"
+        : "Terjadwal"
+    return `${prefix} ${formatDate(invoice.subscriptionStartDate)} - ${formatDate(invoice.subscriptionEndDate)}`
+  }
+
+  if (invoice.status === "PAID") return `${invoice.durationDays} hari aktif`
+  return "Aktif setelah lunas"
 }
 
 export function BillingInvoiceTable({ invoices }: { invoices: BillingInvoice[] }) {
@@ -74,7 +91,7 @@ export function BillingInvoiceTable({ invoices }: { invoices: BillingInvoice[] }
                   />
                 ) : (
                   <span className="text-xs text-muted-foreground">
-                    {invoice.status === "PAID" ? "Selesai" : formatDate(invoice.createdAt)}
+                    {invoice.status === "PAID" ? subscriptionWindowLabel(invoice) : formatDate(invoice.createdAt)}
                   </span>
                 )}
               </div>
@@ -119,7 +136,7 @@ export function BillingInvoiceTable({ invoices }: { invoices: BillingInvoice[] }
                   <TableCell><StatusBadge status={invoice.status} /></TableCell>
                   <TableCell className="text-muted-foreground">{methodLabel(invoice.method)}</TableCell>
                   <TableCell className="text-muted-foreground">
-                    {invoice.status === "PAID" ? `${invoice.durationDays} hari aktif` : "Aktif setelah lunas"}
+                    {subscriptionWindowLabel(invoice)}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-muted-foreground">{formatDate(invoice.createdAt)}</TableCell>
                   <TableCell className="text-right">

@@ -38,7 +38,7 @@ export async function applyMidtransPaymentLifecycle(payload: MidtransStatusPaylo
   if (lifecycle.isSuccess) {
     await updateInvoiceStatus(invoice.id, "PAID")
     const subscription = await activateSubscriptionForInvoice(invoice.id)
-    subscriptionStatus = subscription ? "ACTIVE" : "PENDING_PAYMENT"
+    subscriptionStatus = subscription?.status || "PENDING_PAYMENT"
   } else if (lifecycle.isFailure) {
     await updateInvoiceStatus(invoice.id, lifecycle.invoiceStatus)
     const failedSubscriptionStatus = lifecycle.invoiceStatus === "EXPIRED" ? "EXPIRED" : "CANCELLED"
@@ -48,7 +48,7 @@ export async function applyMidtransPaymentLifecycle(payload: MidtransStatusPaylo
     await updateInvoiceStatus(invoice.id, lifecycle.invoiceStatus)
   } else {
     const subscription = await activateSubscriptionForInvoice(invoice.id)
-    subscriptionStatus = subscription ? "ACTIVE" : "PENDING_PAYMENT"
+    subscriptionStatus = subscription?.status || "PENDING_PAYMENT"
   }
 
   return {

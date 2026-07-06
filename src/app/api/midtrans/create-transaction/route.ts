@@ -5,7 +5,7 @@ import { getMemberByUserId } from "@/lib/db/members"
 import { getPlanByCode } from "@/lib/db/plans"
 import { createInvoice } from "@/lib/db/invoices"
 import { createPayment, updatePaymentStatus } from "@/lib/db/payments"
-import { createSubscription } from "@/lib/db/subscriptions"
+import { createSubscription, getNextSubscriptionPreview } from "@/lib/db/subscriptions"
 
 const schema = z.object({
   planCode: z.string().min(2),
@@ -40,8 +40,7 @@ export async function POST(request: Request) {
     amount: Number(plan.price),
   })
 
-  const startDate = new Date().toISOString().split("T")[0]
-  const endDate = new Date(Date.now() + Math.max(0, plan.duration_days - 1) * 86400000).toISOString().split("T")[0]
+  const { startDate, endDate } = await getNextSubscriptionPreview(member.id, Number(plan.duration_days || 1))
 
   const subscription = await createSubscription({
     memberId: member.id,

@@ -81,14 +81,14 @@ export function SubscribeButton({
   initialPaymentResult = null,
   activeSubEndDate = null,
   planName = "",
-  remainingDays = 0,
+  remainingLabel = "",
 }: {
   planCode: string
   label?: string
   initialPaymentResult?: NativePaymentResult | null
   activeSubEndDate?: string | null
   planName?: string
-  remainingDays?: number
+  remainingLabel?: string
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -281,7 +281,7 @@ export function SubscribeButton({
                   <p>
                     Anda memiliki subscription aktif sampai{" "}
                     <span className="font-medium">{new Date(activeSubEndDate).toLocaleDateString("id-ID")}</span>{" "}
-                    ({remainingDays} hari lagi).
+                    {remainingLabel ? `(${remainingLabel}).` : "."}
                   </p>
                   <p>
                     Jika membeli <span className="font-medium">{planName}</span>, subscription baru akan

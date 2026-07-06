@@ -33,7 +33,7 @@ export async function getPaymentByOrderId(orderId: string) {
 }
 
 export async function updatePaymentStatus(id: string, status: string, transactionId?: string, rawCallback?: unknown) {
-  const update: Record<string, unknown> = { status }
+  const update: Record<string, unknown> = { status, updated_at: new Date().toISOString() }
   if (transactionId) update.provider_transaction_id = transactionId
   if (rawCallback) update.raw_callback = rawCallback
   if (status === "PAID" || status === "settlement") {

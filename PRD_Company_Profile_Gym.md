@@ -1,3 +1,5 @@
+u
+
 # PRD Website Company Profile Gym
 
 ## 1. Ringkasan Produk
@@ -202,7 +204,7 @@ Format tampilan:
 
 Contoh copy:
 
-> **Lat Pulldown**  
+> **Lat Pulldown**
 > Alat untuk melatih otot punggung, bahu, dan lengan. Cocok untuk membangun kekuatan upper body.
 
 ---
@@ -286,8 +288,8 @@ Konten:
 
 Contoh struktur:
 
-> **Lokasi Kami**  
-> Jl. Contoh Raya No. 10, Yogyakarta  
+> **Lokasi Kami**
+> Jl. Contoh Raya No. 10, Yogyakarta
 > Dekat dengan [patokan lokasi]. Mudah dijangkau menggunakan motor maupun mobil.
 
 CTA:
