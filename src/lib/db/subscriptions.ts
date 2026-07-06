@@ -107,7 +107,7 @@ export async function activateSubscription(id: string) {
     .limit(1)
 
   const startDate = latestActive?.end_date || today
-  const endDate = addDaysFromDateString(startDate, Number(plan.duration_days || 30))
+  const endDate = addDaysFromDateString(startDate, Math.max(0, Number(plan.duration_days || 30) - 1))
   const memberType = plan.code === "DAILY_PASS" || plan.type === "DAILY" ? "DAILY" : "PREMIUM"
 
   await db
@@ -169,7 +169,7 @@ export async function activateSubscriptionForInvoice(invoiceId: string) {
       plan_id: inv.plan_id,
       invoice_id: invoiceId,
       start_date: startDate,
-      end_date: addDays(new Date(), durationDays),
+      end_date: addDays(new Date(), Math.max(0, durationDays - 1)),
       status: "ACTIVE",
     })
     .returning({ id: subscriptions.id })
@@ -289,6 +289,6 @@ export function getSubscriptionStackPreview(
 ) {
   const today = new Date().toISOString().split("T")[0]
   const startDate = activeSubscription?.end_date || today
-  const endDate = addDaysFromDateString(startDate, planDurationDays)
+  const endDate = addDaysFromDateString(startDate, Math.max(0, planDurationDays - 1))
   return { startDate, endDate }
 }

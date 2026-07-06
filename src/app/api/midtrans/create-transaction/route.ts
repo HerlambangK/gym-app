@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   })
 
   const startDate = new Date().toISOString().split("T")[0]
-  const endDate = new Date(Date.now() + plan.duration_days * 86400000).toISOString().split("T")[0]
+  const endDate = new Date(Date.now() + Math.max(0, plan.duration_days - 1) * 86400000).toISOString().split("T")[0]
 
   const subscription = await createSubscription({
     memberId: member.id,
