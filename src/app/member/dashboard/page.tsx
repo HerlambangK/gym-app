@@ -2,7 +2,7 @@ import Link from "next/link"
 import { ArrowRight, CalendarCheck2, Dumbbell, MapPin, Timer, Utensils } from "lucide-react"
 import { getCurrentUserId } from "@/lib/current-user"
 import { getMemberByUserId } from "@/lib/db/members"
-import { getActiveSubscription, getCurrentAndUpcomingSubscriptions, getSubscriptionExpiryInfo } from "@/lib/db/subscriptions"
+import { getActiveSubscription, getCurrentAndUpcomingSubscriptions, getPaidSubscriptionHistory, getSubscriptionExpiryInfo } from "@/lib/db/subscriptions"
 import { getActiveSession, getMemberAttendances } from "@/lib/db/attendances"
 import { getDefaultBranch } from "@/lib/db/branches"
 import { getActiveWorkoutProgram } from "@/lib/db/workouts"
@@ -30,6 +30,7 @@ export default async function Page() {
     recentAttendances,
     subStack,
     workoutProgram,
+    paidHistory,
   ] = await Promise.all([
     getActiveSubscription(member.id).catch(() => null),
     getDefaultBranch().catch(() => null),
@@ -37,6 +38,7 @@ export default async function Page() {
     getMemberAttendances(member.id, 20).catch(() => []),
     getCurrentAndUpcomingSubscriptions(member.id).catch(() => ({ current: null, upcoming: [] })),
     getActiveWorkoutProgram(member.id).catch(() => null),
+    getPaidSubscriptionHistory(member.id).catch(() => []),
   ])
 
   const expiryInfo = getSubscriptionExpiryInfo(subscription)
@@ -243,6 +245,27 @@ export default async function Page() {
                     Program workout tersedia.
                   </Link>
                 </div>
+
+                {paidHistory.length > 1 ? (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Riwayat</p>
+                    {paidHistory.slice(1).map((sub) => {
+                      const plan = sub.membership_plans
+                      const expiredAt = (sub.invoice as { expired_at?: string } | null)?.expired_at
+                      return (
+                        <div key={sub.id} className="rounded-lg border border-border p-3 text-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-medium">{plan?.name || "Paket"}</span>
+                            <Badge variant="muted">Kadaluarsa</Badge>
+                          </div>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            {formatDate(sub.start_date)} – {formatDate(expiredAt || sub.end_date)}
+                          </p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : null}
                 {expiryInfo.isExpiringSoon ? (
                   <Link href="/member/billing">
                     <Button className="w-full" variant={expiryInfo.isCritical ? "destructive" : "default"}>

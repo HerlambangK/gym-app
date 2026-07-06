@@ -199,6 +199,22 @@ export async function getMemberSubscriptions(memberId: string) {
   }))
 }
 
+export async function getPaidSubscriptionHistory(memberId: string) {
+  const rows = await db
+    .select()
+    .from(subscriptions)
+    .innerJoin(membership_plans, eq(subscriptions.plan_id, membership_plans.id))
+    .innerJoin(invoices, eq(subscriptions.invoice_id, invoices.id))
+    .where(and(eq(invoices.member_id, memberId), eq(invoices.status, "PAID")))
+    .orderBy(desc(subscriptions.created_at))
+
+  return rows.map((row) => ({
+    ...row.subscriptions,
+    membership_plans: row.membership_plans,
+    invoice: { status: row.invoices.status, expired_at: row.invoices.expired_at },
+  }))
+}
+
 export async function getActiveSubscriptionCount() {
   const [result] = await db
     .select({ value: count() })
