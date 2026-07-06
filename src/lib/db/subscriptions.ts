@@ -1,27 +1,38 @@
-import { eq, and, lt, lte, gte, desc, count, inArray } from "drizzle-orm"
+import { eq, and, lt, lte, gte, desc, count, inArray, isNotNull } from "drizzle-orm"
 import { ne } from "drizzle-orm/sql/expressions/conditions"
 import { db } from "@/lib/drizzle"
 import { subscriptions, membership_plans, members, users, invoices } from "@/db/schema"
 
 export async function autoExpireSubscriptions() {
   const today = new Date().toISOString().split("T")[0]
+
   const expiredRows = await db
     .select({ id: subscriptions.id, invoice_id: subscriptions.invoice_id })
     .from(subscriptions)
     .where(and(eq(subscriptions.status, "ACTIVE"), lt(subscriptions.end_date, today)))
 
-  if (expiredRows.length === 0) return
+  if (expiredRows.length > 0) {
+    const subIds = expiredRows.map((r) => r.id)
+    const invIds = expiredRows.filter((r) => r.invoice_id).map((r) => r.invoice_id!)
 
-  const subIds = expiredRows.map((r) => r.id)
-  const invIds = expiredRows.filter((r) => r.invoice_id).map((r) => r.invoice_id!)
+    await db.update(subscriptions).set({ status: "EXPIRED" }).where(inArray(subscriptions.id, subIds))
 
-  await db.update(subscriptions).set({ status: "EXPIRED" }).where(inArray(subscriptions.id, subIds))
+    if (invIds.length > 0) {
+      await db
+        .update(invoices)
+        .set({ status: "EXPIRED" })
+        .where(and(inArray(invoices.id, invIds), eq(invoices.status, "PAID")))
+    }
+  }
 
-  if (invIds.length > 0) {
-    await db
-      .update(invoices)
-      .set({ status: "EXPIRED" })
-      .where(and(inArray(invoices.id, invIds), eq(invoices.status, "PAID")))
+  const expiredInvoices = await db
+    .select({ id: invoices.id })
+    .from(invoices)
+    .where(and(eq(invoices.status, "PAID"), lt(invoices.expired_at, today), isNotNull(invoices.expired_at)))
+
+  if (expiredInvoices.length > 0) {
+    const invIds = expiredInvoices.map((r) => r.id)
+    await db.update(invoices).set({ status: "EXPIRED" }).where(inArray(invoices.id, invIds))
   }
 }
 
@@ -103,6 +114,13 @@ export async function activateSubscription(id: string) {
     .update(subscriptions)
     .set({ status: "ACTIVE", start_date: startDate, end_date: endDate })
     .where(eq(subscriptions.id, id))
+
+  if (sub.invoice_id) {
+    await db
+      .update(invoices)
+      .set({ expired_at: endDate })
+      .where(eq(invoices.id, sub.invoice_id))
+  }
 
   await db
     .update(members)
