@@ -9,15 +9,14 @@ import { getActiveSession } from "@/lib/db/attendances"
 import { getDefaultBranch } from "@/lib/db/branches"
 import { getMemberByUserId } from "@/lib/db/members"
 import { getActiveSubscription } from "@/lib/db/subscriptions"
-import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getCurrentUserId } from "@/lib/current-user"
 import { redirect } from "next/navigation"
 
 export default async function Page() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const userId = await getCurrentUserId()
+  if (!userId) redirect("/login")
 
-  const member = await getMemberByUserId(user.id)
+  const member = await getMemberByUserId(userId)
   const branch = await getDefaultBranch()
   const activeSession = member ? await getActiveSession(member.id) : null
   const subscription = member ? await getActiveSubscription(member.id) : null

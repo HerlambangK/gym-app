@@ -35,13 +35,18 @@ export async function getInvoiceByNumber(number: string) {
   return { ...row.invoices, members: row.members, membership_plans: row.membership_plans }
 }
 
-export async function getMemberInvoices(memberId: string) {
+export async function getMemberInvoices(memberId: string, activeOnly = false) {
+  const conditions = [eq(invoices.member_id, memberId)]
+  if (activeOnly) {
+    conditions.push(inArray(invoices.status, ["PAID", "PENDING"] as any))
+  }
+
   const rows = await db
     .select()
     .from(invoices)
     .innerJoin(membership_plans, eq(invoices.plan_id, membership_plans.id))
     .leftJoin(payments, eq(invoices.id, payments.invoice_id))
-    .where(eq(invoices.member_id, memberId))
+    .where(and(...conditions))
     .orderBy(desc(invoices.created_at))
 
   return rows.map((row) => ({

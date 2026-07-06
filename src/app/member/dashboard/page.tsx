@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { ArrowRight, CalendarCheck2, Dumbbell, MapPin, Timer, Utensils } from "lucide-react"
-import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getCurrentUserId } from "@/lib/current-user"
 import { getMemberByUserId } from "@/lib/db/members"
 import { getActiveSubscription, getCurrentAndUpcomingSubscriptions, getSubscriptionExpiryInfo } from "@/lib/db/subscriptions"
 import { getActiveSession, getMemberAttendances } from "@/lib/db/attendances"
@@ -12,22 +12,32 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { redirect } from "next/navigation"
-import { formatDate } from "@/lib/format"
+import { formatDate, formatMinutes } from "@/lib/format"
 import { SubscriptionExpiryDialog } from "@/components/member/subscription-expiry-dialog"
 import { WorkoutBodyIntensity, type WorkoutMuscleIntensity } from "@/components/member/workout-body-intensity"
 
 export default async function Page() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const userId = await getCurrentUserId()
+  if (!userId) redirect("/login")
 
-  const member = await getMemberByUserId(user.id)
-  const subscription = member ? await getActiveSubscription(member.id) : null
-  const branch = await getDefaultBranch()
-  const activeSession = member ? await getActiveSession(member.id) : null
-  const recentAttendances = member ? await getMemberAttendances(member.id, 4) : []
-  const subStack = member ? await getCurrentAndUpcomingSubscriptions(member.id) : { current: null, upcoming: [] }
-  const workoutProgram = member ? await getActiveWorkoutProgram(member.id) : null
+  const member = await getMemberByUserId(userId)
+  if (!member) redirect("/login")
+
+  const [
+    subscription,
+    branch,
+    activeSession,
+    recentAttendances,
+    subStack,
+    workoutProgram,
+  ] = await Promise.all([
+    getActiveSubscription(member.id).catch(() => null),
+    getDefaultBranch().catch(() => null),
+    getActiveSession(member.id).catch(() => null),
+    getMemberAttendances(member.id, 20).catch(() => []),
+    getCurrentAndUpcomingSubscriptions(member.id).catch(() => ({ current: null, upcoming: [] })),
+    getActiveWorkoutProgram(member.id).catch(() => null),
+  ])
 
   const expiryInfo = getSubscriptionExpiryInfo(subscription)
   const remainingDays = expiryInfo.remainingDays
@@ -37,10 +47,15 @@ export default async function Page() {
   const progress = membershipTiming?.remainingProgress ?? 0
   const isPremium = member?.member_type === "PREMIUM" || (Boolean(subscription) && subscription?.membership_plans?.code !== "DAILY_PASS")
   const planName = (subscription?.membership_plans as { name?: string } | null)?.name || "Subscription"
-  const completedSessions = recentAttendances.filter((item) => item.status === "CHECKED_OUT" || item.status === "AUTO_CHECKED_OUT").length
-  const totalMinutes = recentAttendances.reduce((sum, item) => sum + Number(item.duration_minutes || 0), 0)
   const workoutStats = getWorkoutStats(workoutProgram)
   const workoutIntensity = getWorkoutIntensity(workoutProgram)
+  const todayWorkout = getTodayWorkoutInfo(workoutProgram)
+  const completedWithDuration = recentAttendances.filter(
+    (a) => (a.status === "CHECKED_OUT" || a.status === "AUTO_CHECKED_OUT") && a.duration_minutes,
+  )
+  const avgMinutes = completedWithDuration.length > 0
+    ? Math.round(completedWithDuration.reduce((s, a) => s + Number(a.duration_minutes), 0) / completedWithDuration.length)
+    : null
 
   return (
     <div className="space-y-3 sm:space-y-6">
@@ -123,12 +138,16 @@ export default async function Page() {
             value={membershipTiming?.shortLabel || "-"}
             helper={subscription ? `${planName} sampai ${formatDate(subscription.end_date)}` : "Belum ada paket"}
           />
-          <CompactInfo
-            icon={Dumbbell}
-            label="Latihan"
-            value={`${completedSessions} sesi`}
-            helper={totalMinutes > 0 ? `${totalMinutes} menit tercatat` : "Menunggu check-out"}
-          />
+          <Link href="/member/workouts" className="block rounded-lg border border-primary/40 bg-primary/[0.03] transition hover:border-primary hover:bg-primary/[0.06]">
+            <CompactInfo
+              icon={Dumbbell}
+              label="Latihan Hari Ini"
+              value={todayWorkout ? toLabel(workoutProgram?.title || "Program") : toLabel(workoutProgram?.title || "Belum ada program")}
+              helper={todayWorkout
+                ? `${todayWorkout.exerciseList}${avgMinutes ? ` · ~${formatMinutes(avgMinutes)}` : ""}`
+                : workoutProgram ? "Atur jadwal latihan" : "Buat program workout"}
+            />
+          </Link>
           <CompactInfo
             icon={MapPin}
             label="Cabang"
@@ -261,7 +280,7 @@ export default async function Page() {
                           <div>
                             <p className="font-medium">{formatDate(attendance.check_in_time)}</p>
                             <p className="mt-1 text-sm text-muted-foreground">
-                              {branchInfo?.name || "Cabang"} · {attendance.duration_minutes ? `${attendance.duration_minutes} menit` : "Belum check-out"}
+                              {branchInfo?.name || "Cabang"} · {attendance.duration_minutes ? formatMinutes(attendance.duration_minutes) : "Belum check-out"}
                             </p>
                           </div>
                           <Badge variant={attendance.status === "CHECKED_IN" ? "success" : "muted"}>{attendance.status}</Badge>
@@ -457,6 +476,42 @@ function CompactInfo({
       </div>
     </div>
   )
+}
+
+function toLabel(value: string): string {
+  return value
+    .replace(/_/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
+function getTodayWorkoutInfo(program: Awaited<ReturnType<typeof getActiveWorkoutProgram>>): { count: number; exerciseList: string } | null {
+  if (!program?.workout_sessions?.length) return null
+
+  const dayNames = [
+    "minggu", "senin", "selasa", "rabu", "kamis", "jumat", "sabtu",
+    "sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday",
+  ]
+  const todayIndex = new Date().getDay()
+  const todayVariants = [
+    dayNames[todayIndex],
+    dayNames[todayIndex + 7],
+  ]
+
+  const todaySession = program.workout_sessions.find((s) => {
+    const name = s.day_name?.toLowerCase().trim() || ""
+    return todayVariants.some((v) => name === v || name.startsWith(v))
+  })
+
+  if (!todaySession) return null
+
+  const types = new Set(todaySession.workout_exercises.map((e) => toLabel(e.exercise_type || e.exercise_name)))
+  const list = Array.from(types).slice(0, 5).join(", ")
+  return {
+    count: types.size,
+    exerciseList: types.size > 5 ? `${list}, +${types.size - 5} lagi` : list,
+  }
 }
 
 function getMembershipTiming(startDate: string, endDate: string, fallbackDurationDays: number) {

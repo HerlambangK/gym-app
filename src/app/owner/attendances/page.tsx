@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server"
-import { getUserRole } from "@/lib/db/users"
+import { getCurrentUserId, getCurrentUserRole } from "@/lib/current-user"
 import { getAttendancesByDate } from "@/lib/db/attendances"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -101,11 +100,10 @@ export default async function Page({
   const previousDate = shiftDateInput(selectedDate, -1)
   const nextDate = shiftDateInput(selectedDate, 1)
 
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const userId = await getCurrentUserId()
+  if (!userId) redirect("/login")
 
-  const role = await getUserRole(user.id)
+  const role = await getCurrentUserRole()
   if (role !== "OWNER" && role !== "SUPER_ADMIN") redirect("/member/dashboard")
 
   const data = await getAttendancesByDate(startIso, endIso)

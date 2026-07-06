@@ -4,16 +4,13 @@ import { NutritionForm } from "@/components/member/nutrition-form"
 import { getMemberByUserId } from "@/lib/db/members"
 import { getNutritionLogs, getNutritionTarget } from "@/lib/db/nutrition"
 import { isFitnessProfileIncomplete } from "@/lib/member-fitness-profile"
-import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getCurrentUserId } from "@/lib/current-user"
 
 export default async function Page() {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const userId = await getCurrentUserId()
+  if (!userId) redirect("/login")
 
-  const member = await getMemberByUserId(user.id)
+  const member = await getMemberByUserId(userId)
   const today = new Date().toISOString().split("T")[0]
   const [logs, target] = member
     ? await Promise.all([getNutritionLogs(member.id, 14), getNutritionTarget(member.id)])

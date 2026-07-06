@@ -10,7 +10,7 @@ import { getMemberByUserId } from "@/lib/db/members"
 import { getPlans } from "@/lib/db/plans"
 import { getActiveSubscription, getSubscriptionExpiryInfo, getSubscriptionStackPreview } from "@/lib/db/subscriptions"
 import { rupiah, formatDate } from "@/lib/format"
-import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getCurrentUserId } from "@/lib/current-user"
 
 function getFirst<T>(value: T | T[] | null | undefined) {
   return Array.isArray(value) ? value[0] : value
@@ -35,13 +35,10 @@ function buildPaymentResult(invoice: Record<string, unknown>) {
 }
 
 export default async function Page() {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const userId = await getCurrentUserId()
+  if (!userId) redirect("/login")
 
-  const member = await getMemberByUserId(user.id)
+  const member = await getMemberByUserId(userId)
   if (!member) {
     return (
       <div className="rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground">
@@ -51,7 +48,7 @@ export default async function Page() {
   }
 
   const [invoices, plans, subscription] = await Promise.all([
-    getMemberInvoices(member.id),
+    getMemberInvoices(member.id, true),
     getPlans(),
     getActiveSubscription(member.id),
   ])

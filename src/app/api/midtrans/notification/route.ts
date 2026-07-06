@@ -7,27 +7,27 @@ export async function POST(request: Request) {
     const signatureValid = verifyMidtransSignature(payload)
 
     if (!signatureValid) {
-      console.warn("[midtrans/callback] Invalid signature")
+      console.warn("[midtrans/notification] Invalid signature")
       return new Response("OK", { status: 200 })
     }
 
     const orderId = payload.order_id
 
     if (!orderId || typeof orderId !== "string" || orderId.trim().length === 0) {
-      console.warn("[midtrans/callback] Missing order_id")
+      console.warn("[midtrans/notification] Missing order_id")
       return new Response("OK", { status: 200 })
     }
 
     const result = await applyMidtransPaymentLifecycle(payload)
     if (!result.ok) {
-      console.error("[midtrans/callback] Lifecycle error:", result.error)
+      console.error("[midtrans/notification] Lifecycle error:", result.error)
       return new Response("OK", { status: 200 })
     }
 
-    console.log("[midtrans/callback] Processed", orderId, "->", result.paymentStatus)
+    console.log("[midtrans/notification] Processed", orderId, "->", result.paymentStatus)
     return new Response("OK", { status: 200 })
   } catch (err) {
-    console.error("[midtrans/callback] Internal error:", err)
+    console.error("[midtrans/notification] Internal error:", err)
     return new Response("OK", { status: 200 })
   }
 }

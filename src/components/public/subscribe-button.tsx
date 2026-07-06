@@ -1,8 +1,8 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Copy, Landmark, QrCode } from "lucide-react"
+import { ArrowLeft, CheckCircle2, Copy, Landmark, QrCode } from "lucide-react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -98,6 +98,8 @@ export function SubscribeButton({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(initialPaymentResult?.paymentMethod ?? "bca_va")
   const [paymentResult, setPaymentResult] = useState<NativePaymentResult | null>(initialPaymentResult)
   const [step, setStep] = useState<"method" | "instruction">(initialPaymentResult ? "instruction" : "method")
+  const [successOpen, setSuccessOpen] = useState(false)
+  const notifiedRef = useRef(false)
 
   const selectedMethod = useMemo(
     () => paymentMethods.find((method) => method.value === paymentMethod) ?? paymentMethods[0],
@@ -129,6 +131,10 @@ export function SubscribeButton({
       } : current)
 
       if (data.paymentStatus === "PAID") {
+        if (!notifiedRef.current) {
+          notifiedRef.current = true
+          setSuccessOpen(true)
+        }
         toast.success("Pembayaran berhasil. Subscription aktif.")
         window.dispatchEvent(new Event("forgefit:account-updated"))
         router.refresh()
@@ -406,6 +412,28 @@ export function SubscribeButton({
               ) : null}
             </div>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={successOpen} onOpenChange={setSuccessOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex size-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-300">
+              <CheckCircle2 size={28} />
+            </div>
+            <DialogTitle className="text-center">Pembayaran Berhasil</DialogTitle>
+            <DialogDescription className="text-center">
+              Subscription aktif. Semua fitur member sudah bisa digunakan.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Button onClick={() => { setSuccessOpen(false); router.refresh(); }}>
+              Lanjut ke Dashboard
+            </Button>
+            <Button variant="outline" onClick={() => setSuccessOpen(false)}>
+              Tutup
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

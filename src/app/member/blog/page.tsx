@@ -1,12 +1,11 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getCurrentUserId } from "@/lib/current-user"
 import { getBlogPosts } from "@/lib/db/blog"
 import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default async function Page() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const userId = await getCurrentUserId()
 
   const posts = await getBlogPosts()
 
@@ -14,7 +13,7 @@ export default async function Page() {
     <div className="space-y-6">
       <DashboardPageHeader
         eyebrow="Member"
-        status={user ? "Konten membership" : "Memuat member"}
+        status={userId ? "Konten membership" : "Memuat member"}
         title="Blog dan Edukasi"
         description="Baca panduan latihan, nutrisi, dan recovery yang disiapkan untuk member gym."
       />

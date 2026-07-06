@@ -5,16 +5,13 @@ import { getMemberByUserId } from "@/lib/db/members"
 import { getNutritionTarget } from "@/lib/db/nutrition"
 import { getActiveWorkoutProgram } from "@/lib/db/workouts"
 import { isFitnessProfileIncomplete, parseWorkoutNotes } from "@/lib/member-fitness-profile"
-import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getCurrentUserId } from "@/lib/current-user"
 
 export default async function Page() {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const userId = await getCurrentUserId()
+  if (!userId) redirect("/login")
 
-  const member = await getMemberByUserId(user.id)
+  const member = await getMemberByUserId(userId)
   const [program, target] = member
     ? await Promise.all([getActiveWorkoutProgram(member.id), getNutritionTarget(member.id).catch(() => null)])
     : [null, null]

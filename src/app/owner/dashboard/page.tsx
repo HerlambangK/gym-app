@@ -1,5 +1,4 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server"
-import { getUserRole } from "@/lib/db/users"
+import { getCurrentUserId, getCurrentUserRole } from "@/lib/current-user"
 import { getAllInvoices } from "@/lib/db/invoices"
 import { getMemberSubscriptionSummary, getMembers } from "@/lib/db/members"
 import { getInvoiceStats } from "@/lib/db/invoices"
@@ -13,11 +12,10 @@ import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { redirect } from "next/navigation"
 
 export default async function Page() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const userId = await getCurrentUserId()
+  if (!userId) redirect("/login")
 
-  const role = await getUserRole(user.id)
+  const role = await getCurrentUserRole()
   if (role !== "OWNER" && role !== "SUPER_ADMIN") redirect("/member/dashboard")
 
   const [revenue, expenses, activeMembers, todayCheckIns, invoicesData, membersData] = await Promise.all([

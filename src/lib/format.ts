@@ -35,3 +35,11 @@ export function formatTime(date: string) {
   return timeShort.format(new Date(date));
 }
 
+export function formatMinutes(totalMinutes: number): string {
+  const hours = Math.floor(totalMinutes / 60)
+  const mins = totalMinutes % 60
+  if (hours > 0 && mins > 0) return `${hours} jam ${mins} menit`
+  if (hours > 0) return `${hours} jam`
+  return `${mins} menit`
+}
+

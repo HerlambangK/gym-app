@@ -4,18 +4,17 @@ import { ProfileForm } from "@/components/member/profile-form"
 import { getMemberByUserId } from "@/lib/db/members"
 import { getNutritionTarget } from "@/lib/db/nutrition"
 import { getUserById } from "@/lib/db/users"
-import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getCurrentUserId, getCurrentUserEmail, getCurrentUserVerified } from "@/lib/current-user"
 
 export default async function Page() {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const userId = await getCurrentUserId()
+  if (!userId) redirect("/login")
 
-  const [profile, member] = await Promise.all([
-    getUserById(user.id).catch(() => null),
-    getMemberByUserId(user.id),
+  const [profile, member, email, verified] = await Promise.all([
+    getUserById(userId).catch(() => null),
+    getMemberByUserId(userId),
+    getCurrentUserEmail(),
+    getCurrentUserVerified(),
   ])
   const target = member ? await getNutritionTarget(member.id).catch(() => null) : null
 
@@ -23,7 +22,7 @@ export default async function Page() {
     <div className="space-y-6">
       <DashboardPageHeader
         eyebrow="Profile"
-        status={user.email_confirmed_at ? "Verified" : "Unverified"}
+        status={verified ? "Verified" : "Unverified"}
         title="Setting Profile"
         description="Kelola identitas member, kontak, status akun, dan informasi membership."
       />
@@ -31,8 +30,8 @@ export default async function Page() {
         profile={profile}
         member={member}
         target={target}
-        email={user.email || ""}
-        verified={Boolean(user.email_confirmed_at)}
+        email={email || ""}
+        verified={verified}
       />
     </div>
   )

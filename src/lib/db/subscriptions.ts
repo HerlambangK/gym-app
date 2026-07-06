@@ -1,9 +1,32 @@
-import { eq, and, lte, gte, desc, count } from "drizzle-orm"
+import { eq, and, lt, lte, gte, desc, count, inArray } from "drizzle-orm"
 import { ne } from "drizzle-orm/sql/expressions/conditions"
 import { db } from "@/lib/drizzle"
 import { subscriptions, membership_plans, members, users, invoices } from "@/db/schema"
 
+export async function autoExpireSubscriptions() {
+  const today = new Date().toISOString().split("T")[0]
+  const expiredRows = await db
+    .select({ id: subscriptions.id, invoice_id: subscriptions.invoice_id })
+    .from(subscriptions)
+    .where(and(eq(subscriptions.status, "ACTIVE"), lt(subscriptions.end_date, today)))
+
+  if (expiredRows.length === 0) return
+
+  const subIds = expiredRows.map((r) => r.id)
+  const invIds = expiredRows.filter((r) => r.invoice_id).map((r) => r.invoice_id!)
+
+  await db.update(subscriptions).set({ status: "EXPIRED" }).where(inArray(subscriptions.id, subIds))
+
+  if (invIds.length > 0) {
+    await db
+      .update(invoices)
+      .set({ status: "EXPIRED" })
+      .where(and(inArray(invoices.id, invIds), eq(invoices.status, "PAID")))
+  }
+}
+
 export async function getActiveSubscription(memberId: string) {
+  await autoExpireSubscriptions()
   const today = new Date().toISOString().split("T")[0]
   const rows = await db
     .select()
@@ -202,6 +225,7 @@ export function getSubscriptionExpiryInfo(subscription: { end_date: string } | n
 }
 
 export async function getCurrentAndUpcomingSubscriptions(memberId: string) {
+  await autoExpireSubscriptions()
   const today = new Date().toISOString().split("T")[0]
 
   const rows = await db

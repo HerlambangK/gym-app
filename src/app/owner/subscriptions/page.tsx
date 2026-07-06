@@ -3,15 +3,13 @@ import { DashboardPageHeader } from "@/components/dashboard/page-header"
 import { SubscriptionPlanManager } from "@/components/owner/subscription-plan-manager"
 import { Card, CardContent } from "@/components/ui/card"
 import { getAllPlans } from "@/lib/db/plans"
-import { getUserRole } from "@/lib/db/users"
-import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getCurrentUserId, getCurrentUserRole } from "@/lib/current-user"
 
 export default async function Page() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
+  const userId = await getCurrentUserId()
+  if (!userId) redirect("/login")
 
-  const role = await getUserRole(user.id)
+  const role = await getCurrentUserRole()
   if (role !== "OWNER" && role !== "SUPER_ADMIN") redirect("/member/dashboard")
 
   const planResult = await getSubscriptionPlansForOwner()

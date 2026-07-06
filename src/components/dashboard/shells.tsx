@@ -1,14 +1,13 @@
-import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { getCurrentUserId } from "@/lib/current-user"
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { getBrandingSettings } from "@/lib/db/branding"
 import { getUserById } from "@/lib/db/users"
 import { redirect } from "next/navigation"
 
 async function getCurrentUser() {
-  const supabase = await createServerSupabaseClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect("/login")
-  return user
+  const userId = await getCurrentUserId()
+  if (!userId) redirect("/login")
+  return { id: userId }
 }
 
 async function getBranding() {
